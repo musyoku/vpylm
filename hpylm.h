@@ -32,7 +32,7 @@ private:
 public:
 	Node* _root;			// suffix treeのルートノード
 	int _max_depth;			// 深さ
-	int _bottom;
+	int _bottom;			// VPYLMへ拡張時に使う
 	double _g0;				// ゼログラム確率
 
 	// 深さmのノードに関するパラメータ
@@ -141,14 +141,6 @@ public:
 		}
 		return node->Pw(word_id, _g0, _d_m, _theta_m);
 	}
-	double Pw_h(id word_id, id context_id){
-		Node* child = _root->findChildWithId(context_id);
-		if(child == NULL){
-			return _root->Pw(word_id, _g0, _d_m, _theta_m);
-		}
-		double p = child->Pw(word_id, _g0, _d_m, _theta_m);
-		return p;
-	}
 
 	double Pw(id word_id){
 		double p = _root->Pw(word_id, _g0, _d_m, _theta_m);
@@ -159,15 +151,13 @@ public:
 		if(word_ids.size() == 0){
 			return 0;
 		}
-		int w_0 = word_ids[0];
-		double p0 = _root->Pw(w_0, _g0, _d_m, _theta_m);
-		double p = p0;
-		vector<id> h(word_ids.begin(), word_ids.begin() + 1);
-		for(int depth = 1;depth < word_ids.size();depth++){
-			vector<id> w = {word_ids[depth]};
-	        double _p = Pw_h(w, h);
+		double p = 1;
+		vector<id> context_ids(word_ids.begin(), word_ids.begin() + _max_depth);
+		for(int depth = _max_depth;depth < word_ids.size();depth++){
+			id word_id = word_ids[depth];
+			double _p = Pw_h(word_id, context_ids);
 			p *= _p;
-			h.push_back(word_ids[depth]);
+			context_ids.push_back(word_id);
 		}
 		return p;
 	}
@@ -175,15 +165,13 @@ public:
 		if(word_ids.size() == 0){
 			return 0;
 		}
-		int w_0 = word_ids[0];
-		double p0 = _root->Pw(w_0, _g0, _d_m, _theta_m);
-		double p = log2(p0 + 1e-10);
-		vector<id> h(word_ids.begin(), word_ids.begin() + 1);
-		for(int depth = 1;depth < word_ids.size();depth++){
-			vector<id> w = {word_ids[depth]};
-			double _p = Pw_h(w, h);
+		double p = 0;
+		vector<id> context_ids(word_ids.begin(), word_ids.begin() + _max_depth);
+		for(int depth = _max_depth;depth < word_ids.size();depth++){
+			id word_id = word_ids[depth];
+			double _p = Pw_h(word_id, context_ids);
 			p += log2(_p + 1e-10);
-			h.push_back(word_ids[depth]);
+			context_ids.push_back(word_id);
 		}
 		return p;
 	}
@@ -236,6 +224,7 @@ public:
 		}
 		return sampled_word_id;
 	}
+
 
 	// "A Bayesian Interpretation of Interpolated Kneser-Ney" Appendix C参照
 	// http://www.gatsby.ucl.ac.uk/~ywteh/research/compling/hpylm.pdf

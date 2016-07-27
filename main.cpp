@@ -67,12 +67,12 @@ void show_progress(int step, int total, double &progress){
 
 
 void vpylm_generate_sentence(Vocab* vocab, vector<wstring> &dataset, string model_dir){
-	HPYLM* hpylm = new HPYLM(3);
+	VPYLM* vpylm = new VPYLM();
 	int num_chars = vocab->numCharacters();
-	hpylm->_g0 = 1.0 / (double)num_chars;
+	vpylm->_g0 = 1.0 / (double)num_chars;
 
 	// 読み込み
-	hpylm->load(model_dir);
+	vpylm->load(model_dir);
 	vocab->load(model_dir);
 
 	int num_sample = 100;
@@ -82,7 +82,7 @@ void vpylm_generate_sentence(Vocab* vocab, vector<wstring> &dataset, string mode
 		sentence_char_ids.clear();
 		sentence_char_ids.push_back(vocab->bosId());
 		for(int i = 0;i < max_length;i++){
-			id word_id = hpylm->sampleNextWord(sentence_char_ids, vocab->eosId());
+			id word_id = vpylm->sampleNextWord(sentence_char_ids, vocab->eosId());
 			sentence_char_ids.push_back(word_id);
 			if(word_id == vocab->eosId()){
 				break;

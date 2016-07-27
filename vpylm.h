@@ -389,19 +389,19 @@ public:
 		double p0 = _root->Pw(w_0, _g0, _d_m, _theta_m) * _root->p_stop(_beta_stop, _beta_pass);
 		// cout << "p0: " << p0 << endl;
 		double p = log2(p0 + 1e-10);
-		vector<id> h(word_ids.begin(), word_ids.begin() + 1);
+		vector<id> context_ids(word_ids.begin(), word_ids.begin() + 1);
 		for(int depth = 1;depth < word_ids.size();depth++){
-			vector<id> w = {word_ids[depth]};
-			// cout << "w: " << word_ids[depth] << endl;
-			// cout << "h: ";
-			// for(int j = 0;j < h.size();j++){
-				// cout << h[j] << ",";
+			id word = word_ids[depth];
+			// cout << "word: " << word_ids[depth] << endl;
+			// cout << "context_ids: ";
+			// for(int j = 0;j < context_ids.size();j++){
+				// cout << context_ids[j] << ",";
 			// }
 			// cout << endl;
-			double _p = Pw_h(w, h);
+			double _p = Pw_h(word, context_ids);
 			// cout << "p *= " << _p << endl;
 			p += log2(_p + 1e-10);
-			h.push_back(word_ids[depth]);
+			context_ids.push_back(word_ids[depth]);
 		}
 		// cout << "return: " << p << endl;
 		return p;
