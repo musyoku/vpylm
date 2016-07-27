@@ -30,10 +30,10 @@ private:
 		archive & _beta_m;
 	}
 public:
-	Node* _root;			// suffix treeのルートノード
-	int _max_depth;			// 深さ
-	int _bottom;			// VPYLMへ拡張時に使う
-	double _g0;				// ゼログラム確率
+	Node* _root;				// 文脈木のルートノード
+	int _max_depth;				// 深さ
+	int _bottom;				// VPYLMへ拡張時に使う
+	double _g0;					// ゼログラム確率
 
 	// 深さmのノードに関するパラメータ
 	vector<double> _d_m;		// Pitman-Yor過程のディスカウント
