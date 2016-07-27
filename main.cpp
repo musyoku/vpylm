@@ -101,7 +101,7 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 	vector<id> sentence_char_ids;
 
-	int max_epoch = 50;
+	int max_epoch = 100;
 	// int train_per_epoch = dataset.size();
 	int train_per_epoch = dataset.size();
 
@@ -201,47 +201,48 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 		cout << endl << "[epoch " << epoch << "] " <<  (double)train_per_epoch / msec * 1000.0 << " sentences / sec; perplexity " << vpylm_ppl << endl;
 
-		// if(epoch % 10 == 0){
-		// 	vpylm->save(model_dir);
-		// 	vocab->save(model_dir);
-		// }
-
+		if(epoch % 10 == 0){
+			vpylm->save(model_dir);
+			vocab->save(model_dir);
+		}
 	}
 
-	// vpylm->save(model_dir);
-	// vocab->save(model_dir);
+	vpylm->save(model_dir);
+	vocab->save(model_dir);
 
-
+	// <!-- デバッグ用
 	// 客を全て削除した時に客数が本当に0になるかを確認する場合
-	for(int step = 0;step < train_per_epoch;step++){
-		// cout << "\x1b[40;97m[STEP]\x1b[49;39m" << endl;
-		int data_index = rand_perm[step];
+	// for(int step = 0;step < train_per_epoch;step++){
+	// 	// cout << "\x1b[40;97m[STEP]\x1b[49;39m" << endl;
+	// 	int data_index = rand_perm[step];
 
-		wstring sentence = dataset[data_index];
-		if(sentence.length() == 0){
-			continue;
-		}
-		sentence_char_ids.clear();
-		sentence_char_ids.push_back(vocab->bosId());
-		for(int i = 0;i < sentence.length();i++){
-			int id = vocab->char2id(sentence[i]);
-			sentence_char_ids.push_back(id);
-		}
-		sentence_char_ids.push_back(vocab->eosId());
+	// 	wstring sentence = dataset[data_index];
+	// 	if(sentence.length() == 0){
+	// 		continue;
+	// 	}
+	// 	sentence_char_ids.clear();
+	// 	sentence_char_ids.push_back(vocab->bosId());
+	// 	for(int i = 0;i < sentence.length();i++){
+	// 		int id = vocab->char2id(sentence[i]);
+	// 		sentence_char_ids.push_back(id);
+	// 	}
+	// 	sentence_char_ids.push_back(vocab->eosId());
 
-		for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
-			if(prev_orders[data_index] != NULL){
-				int n_t = prev_orders[data_index][c_t_i];
-				bool success = vpylm->remove(sentence_char_ids, c_t_i, n_t);
-				if(success == false){
-					printf("\x1b[41;97m");
-					printf("WARNING");
-					printf("\x1b[49;39m");
-					printf(" Failed to remove a customer from VPYLM.\n");
-				}
-			}
-		}
-	}
+	// 	for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
+	// 		if(prev_orders[data_index] != NULL){
+	// 			int n_t = prev_orders[data_index][c_t_i];
+	// 			bool success = vpylm->remove(sentence_char_ids, c_t_i, n_t);
+	// 			if(success == false){
+	// 				printf("\x1b[41;97m");
+	// 				printf("WARNING");
+	// 				printf("\x1b[49;39m");
+	// 				printf(" Failed to remove a customer from VPYLM.\n");
+	// 			}
+	// 		}
+	// 	}
+	// }
+	//  -->
+
 	cout << vpylm->maxDepth() << endl;
 	cout << vpylm->numChildNodes() << endl;
 	cout << vpylm->numCustomers() << endl;
