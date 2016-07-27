@@ -1,7 +1,0 @@
-# ignore all
-*
-
-# allow any
-!*.cpp
-!*.h
-!*.md
