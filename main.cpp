@@ -84,7 +84,7 @@ void vpylm_generate_sentence(Vocab* vocab, vector<wstring> &dataset, string mode
 		for(int i = 0;i < max_length;i++){
 			id word_id = vpylm->sampleNextWord(sentence_char_ids, vocab->eosId());
 			sentence_char_ids.push_back(word_id);
-			if(word_id == vocab->eosId()){
+			if(word_id == vocab->eosId() || word_id == vocab->bosId()){
 				break;
 			}
 		}
@@ -101,7 +101,7 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 	vector<id> sentence_char_ids;
 
-	int max_epoch = 100;
+	int max_epoch = 10;
 	// int train_per_epoch = dataset.size();
 	int train_per_epoch = dataset.size();
 
@@ -110,17 +110,18 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 		rand_perm.push_back(i);
 	}
 	random_shuffle(rand_perm.begin(), rand_perm.end());
-	// 以前のオーダー(VPYLM)
-	// [data_index][word_id][char_pos]
 
-	int** prev_orders = new int*[dataset.size()];
-	for(int data_index = 0;data_index < dataset.size();data_index++){
-		prev_orders[data_index] = NULL;
-	}
+	unordered_map<int, vector<int> > prev_orders;
 
 	// 読み込み
 	vpylm->load(model_dir);
 	vocab->load(model_dir);
+	string filename = model_dir + "trainer";
+	std::ifstream ifs(filename);
+	if(ifs.good()){
+		boost::archive::binary_iarchive iarchive(ifs);
+		iarchive >> prev_orders;
+	}
 
 	printf("training in progress...\n");
 	for(int epoch = 1;epoch < max_epoch;epoch++){
@@ -149,25 +150,42 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 			}
 			sentence_char_ids.push_back(vocab->eosId());
 
-			if(prev_orders[data_index] == NULL){
-				prev_orders[data_index] = new int[sentence_char_ids.size()];
+			if(prev_orders.find(data_index) == prev_orders.end()){
+				 vector<int> prev_order(sentence_char_ids.size(), -1);
+				 prev_orders[data_index] = prev_order;
 			}else{
-				for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
-					int n_t = prev_orders[data_index][c_t_i];
-					bool success = vpylm->remove(sentence_char_ids, c_t_i, n_t);
-					if(success == false){
-						printf("\x1b[41;97m");
-						printf("WARNING");
-						printf("\x1b[49;39m");
-						printf(" Failed to remove a customer from VPYLM.\n");
-					}
-				}				
+				vector<int> &prev_order = prev_orders[data_index];
+				if(prev_order.size() != sentence_char_ids.size()){
+					printf("\x1b[41;97m");
+					printf("WARNING");
+					printf("\x1b[49;39m");
+					printf(" prev_order missmatch.\n");
+				}else{
+					for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
+						int n_t = prev_order[c_t_i];
+						bool success = vpylm->remove(sentence_char_ids, c_t_i, n_t);
+						if(success == false){
+							printf("\x1b[41;97m");
+							printf("WARNING");
+							printf("\x1b[49;39m");
+							printf(" Failed to remove a customer from VPYLM.\n");
+						}
+					}				
+				}
 			}
 
-			for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
-				int n_t = vpylm->sampleOrder(sentence_char_ids, c_t_i);
-				vpylm->add(sentence_char_ids, c_t_i, n_t);
-				prev_orders[data_index][c_t_i] = n_t;
+			vector<int> &prev_order = prev_orders[data_index];
+			if(prev_order.size() != sentence_char_ids.size()){
+				printf("\x1b[41;97m");
+				printf("WARNING");
+				printf("\x1b[49;39m");
+				printf(" prev_order missmatch.\n");
+			}else{
+				for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
+					int n_t = vpylm->sampleOrder(sentence_char_ids, c_t_i);
+					vpylm->add(sentence_char_ids, c_t_i, n_t);
+					prev_order[c_t_i] = n_t;
+				}
 			}
 		}
 
@@ -209,49 +227,53 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 	vpylm->save(model_dir);
 	vocab->save(model_dir);
+	std::ofstream ofs(filename);
+	boost::archive::binary_oarchive oarchive(ofs);
+	oarchive << prev_orders;
 
 	// <!-- デバッグ用
 	// 客を全て削除した時に客数が本当に0になるかを確認する場合
-	// for(int step = 0;step < train_per_epoch;step++){
-	// 	// cout << "\x1b[40;97m[STEP]\x1b[49;39m" << endl;
-	// 	int data_index = rand_perm[step];
+	for(int step = 0;step < train_per_epoch;step++){
+		int data_index = rand_perm[step];
 
-	// 	wstring sentence = dataset[data_index];
-	// 	if(sentence.length() == 0){
-	// 		continue;
-	// 	}
-	// 	sentence_char_ids.clear();
-	// 	sentence_char_ids.push_back(vocab->bosId());
-	// 	for(int i = 0;i < sentence.length();i++){
-	// 		int id = vocab->char2id(sentence[i]);
-	// 		sentence_char_ids.push_back(id);
-	// 	}
-	// 	sentence_char_ids.push_back(vocab->eosId());
+		wstring sentence = dataset[data_index];
+		if(sentence.length() == 0){
+			continue;
+		}
+		sentence_char_ids.clear();
+		sentence_char_ids.push_back(vocab->bosId());
+		for(int i = 0;i < sentence.length();i++){
+			int id = vocab->char2id(sentence[i]);
+			sentence_char_ids.push_back(id);
+		}
+		sentence_char_ids.push_back(vocab->eosId());
 
-	// 	for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
-	// 		if(prev_orders[data_index] != NULL){
-	// 			int n_t = prev_orders[data_index][c_t_i];
-	// 			bool success = vpylm->remove(sentence_char_ids, c_t_i, n_t);
-	// 			if(success == false){
-	// 				printf("\x1b[41;97m");
-	// 				printf("WARNING");
-	// 				printf("\x1b[49;39m");
-	// 				printf(" Failed to remove a customer from VPYLM.\n");
-	// 			}
-	// 		}
-	// 	}
-	// }
+		if(prev_orders.find(data_index) != prev_orders.end()){
+			vector<int> &prev_order = prev_orders[data_index];
+			if(prev_order.size() != sentence_char_ids.size()){
+				printf("\x1b[41;97m");
+				printf("WARNING");
+				printf("\x1b[49;39m");
+				printf(" prev_order missmatch.\n");
+			}else{
+				for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
+					int n_t = prev_order[c_t_i];
+					bool success = vpylm->remove(sentence_char_ids, c_t_i, n_t);
+					if(success == false){
+						printf("\x1b[41;97m");
+						printf("WARNING");
+						printf("\x1b[49;39m");
+						printf(" Failed to remove a customer from VPYLM.\n");
+					}
+				}
+			}
+		}
+	}
 	//  -->
 
 	cout << vpylm->maxDepth() << endl;
 	cout << vpylm->numChildNodes() << endl;
 	cout << vpylm->numCustomers() << endl;
-
-
-	for(int data_index = 0;data_index < train_per_epoch;data_index++){
-		delete[] prev_orders[data_index];
-	}
-	delete[] prev_orders;
 }
 
 int main(int argc, char *argv[]){
@@ -298,6 +320,6 @@ int main(int argc, char *argv[]){
 	Vocab* vocab = load(filename, dataset);
 
 	train_vpylm(vocab, dataset, model_dir);
-	hpylm_generate_sentence(vocab, dataset, model_dir);
+	vpylm_generate_sentence(vocab, dataset, model_dir);
 	return 0;
 }

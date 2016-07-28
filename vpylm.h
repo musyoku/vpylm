@@ -412,16 +412,18 @@ public:
 		Node* node = _root;
 		int depth = sampleOrder(context_ids, context_ids.size() - 1);
 
-		for(int n = 1;n < depth;n++){
-			int u_t = context_ids[context_ids.size() - n - 1];
-			if(node == NULL){
-				break;
+		if(context_ids.size() > 1){
+			for(int n = 0;n < depth;n++){
+				int u_t = context_ids[context_ids.size() - n - 2];
+				if(node == NULL){
+					break;
+				}
+				Node* child = node->findChildWithId(u_t);
+				if(child == NULL){
+					break;
+				}
+				node = child;
 			}
-			Node* child = node->findChildWithId(u_t);
-			if(child == NULL){
-				break;
-			}
-			node = child;
 		}
 
 		vector<id> word_ids;
