@@ -298,6 +298,6 @@ int main(int argc, char *argv[]){
 	Vocab* vocab = load(filename, dataset);
 
 	train_vpylm(vocab, dataset, model_dir);
-	// hpylm_generate_sentence(vocab, dataset, model_dir);
+	hpylm_generate_sentence(vocab, dataset, model_dir);
 	return 0;
 }

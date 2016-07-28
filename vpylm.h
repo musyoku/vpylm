@@ -407,6 +407,55 @@ public:
 		return p;
 	}
 
+	id sampleNextWord(vector<id> &context_ids, id eos_id){
+		// どの深さまでノードが存在するかを調べる
+		Node* node = _root;
+		int depth = sampleOrder(context_ids, context_ids.size() - 1);
+
+		for(int n = 1;n < depth;n++){
+			int u_t = context_ids[context_ids.size() - n - 1];
+			if(node == NULL){
+				break;
+			}
+			Node* child = node->findChildWithId(u_t);
+			if(child == NULL){
+				break;
+			}
+			node = child;
+		}
+
+		vector<id> word_ids;
+		vector<double> probs;
+		double sum = 0;
+		for(auto elem: node->_arrangement){
+			id word_id = elem.first;
+			double p = Pw_h(word_id, context_ids);
+			if(p > 0){
+				word_ids.push_back(word_id);
+				probs.push_back(p);
+				sum += p;
+			}
+		}
+		if(word_ids.size() == 0){
+			return eos_id;
+		}
+		if(sum == 0){
+			return eos_id;
+		}
+		double ratio = 1.0 / sum;
+		double r = Sampler::uniform(0, 1);
+		sum = 0;
+		id sampled_word_id = word_ids.back();
+		for(int i = 0;i < word_ids.size();i++){
+			sum += probs[i] * ratio;
+			if(sum > r){
+				sampled_word_id = word_ids[i];
+				break;
+			}
+		}
+		return sampled_word_id;
+	}
+
 	int maxDepth(){
 		return _d_m.size() - 1;
 	}
