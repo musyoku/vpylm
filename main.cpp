@@ -21,13 +21,6 @@
 
 using namespace std;
 
-/*
- * 動作確認
- * OS X El Capitan
- * gcc -v
- * Apple LLVM version 7.0.0 (clang-700.0.72)
- */
-
 Vocab* load(string &filename, vector<wstring> &dataset){
 	wifstream ifs(filename.c_str());
 	wstring str;
@@ -149,7 +142,7 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 	vector<id> sentence_char_ids;
 
-	int max_epoch = 50;
+	int max_epoch = 1000;
 	// int train_per_epoch = dataset.size();
 	int train_per_epoch = dataset.size();
 
@@ -367,8 +360,8 @@ int main(int argc, char *argv[]){
 
 	Vocab* vocab = load(filename, dataset);
 
-	// train_vpylm(vocab, dataset, model_dir);
-	// vpylm_generate_sentence(vocab, dataset, model_dir);
+	train_vpylm(vocab, dataset, model_dir);
+	vpylm_generate_sentence(vocab, dataset, model_dir);
 	vpylm_visualize_order(vocab, dataset, model_dir);
 	return 0;
 }
