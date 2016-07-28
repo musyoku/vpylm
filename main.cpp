@@ -75,7 +75,7 @@ void vpylm_generate_sentence(Vocab* vocab, vector<wstring> &dataset, string mode
 	vpylm->load(model_dir);
 	vocab->load(model_dir);
 
-	int num_sample = 100;
+	int num_sample = 50;
 	int max_length = 400;
 	vector<id> sentence_char_ids;
 	for(int s = 0;s < num_sample;s++){
@@ -84,7 +84,33 @@ void vpylm_generate_sentence(Vocab* vocab, vector<wstring> &dataset, string mode
 		for(int i = 0;i < max_length;i++){
 			id word_id = vpylm->sampleNextWord(sentence_char_ids, vocab->eosId());
 			sentence_char_ids.push_back(word_id);
-			if(word_id == vocab->eosId() || word_id == vocab->bosId()){
+			if(word_id == vocab->eosId()){
+				break;
+			}
+		}
+		wcout << vocab->characters2string(sentence_char_ids) << endl;
+	}
+}
+
+void vpylm_visualize_order(Vocab* vocab, vector<wstring> &dataset, string model_dir){
+	VPYLM* vpylm = new VPYLM();
+	int num_chars = vocab->numCharacters();
+	vpylm->_g0 = 1.0 / (double)num_chars;
+
+	// 読み込み
+	vpylm->load(model_dir);
+	vocab->load(model_dir);
+
+	int num_sample = 50;
+	int max_length = 400;
+	vector<id> sentence_char_ids;
+	for(int s = 0;s < num_sample;s++){
+		sentence_char_ids.clear();
+		sentence_char_ids.push_back(vocab->bosId());
+		for(int i = 0;i < max_length;i++){
+			id word_id = vpylm->sampleNextWord(sentence_char_ids, vocab->eosId());
+			sentence_char_ids.push_back(word_id);
+			if(word_id == vocab->eosId()){
 				break;
 			}
 		}
@@ -101,7 +127,7 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 	vector<id> sentence_char_ids;
 
-	int max_epoch = 10;
+	int max_epoch = 50;
 	// int train_per_epoch = dataset.size();
 	int train_per_epoch = dataset.size();
 
@@ -124,7 +150,7 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 	}
 
 	printf("training in progress...\n");
-	for(int epoch = 1;epoch < max_epoch;epoch++){
+	for(int epoch = 1;epoch <= max_epoch;epoch++){
 		// cout << "##########################################" << endl;
 		// cout << "EPOCH " << epoch << endl;
 		// cout << "##########################################" << endl;
@@ -319,7 +345,7 @@ int main(int argc, char *argv[]){
 
 	Vocab* vocab = load(filename, dataset);
 
-	train_vpylm(vocab, dataset, model_dir);
+	// train_vpylm(vocab, dataset, model_dir);
 	vpylm_generate_sentence(vocab, dataset, model_dir);
 	return 0;
 }

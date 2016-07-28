@@ -45,12 +45,13 @@ public:
 		_beta_pass = 1;
 	}
 	// n_tはw_tから見た深さ
-	void add(vector<id> &context, int w_t_i, int n_t){
+	bool add(vector<id> &context, int w_t_i, int n_t){
 		if(n_t > w_t_i){
 			// cout << "VPYLM::add invalid order." << endl;
-			return;
+			return false;
 		}
-		int w_t = context[w_t_i];
+
+		id w_t = context[w_t_i];
 
 		// cout << "VPYLM::add called with context: ";
   //       for(int i = 0;i < context.size();i++){
@@ -59,12 +60,15 @@ public:
 		// cout <<" w_t: " << w_t << " n_t: " << n_t << endl;
 
 		Node* node = _root;
-		for(int depth = 0;depth < n_t;depth++){
-			int u_t = context[w_t_i - depth - 1];
+		for(int depth = 1;depth <= n_t;depth++){
+			if(w_t_i - depth < 0){
+				return false;
+			}
+			id u_t = context[w_t_i - depth];
 			Node* child = node->generateChildIfNeeded(u_t);
 			if(child == NULL){
 				// cout << "internal error occurred." << endl;
-				return;
+				return false;
 			}
 			node = child;
 		}
@@ -73,13 +77,24 @@ public:
 			parent_p_w = node->_parent->Pw(w_t, _g0, _d_m, _theta_m);
 		}
 		node->addCustomer(w_t, parent_p_w, _d_m, _theta_m);
+		// cout << endl;
+		return true;
 	}
 
 	bool remove(vector<id> &context, int w_t_i, int n_t){
-		int w_t = context[w_t_i];
+		id w_t = context[w_t_i];
+
+		// cout << "VPYLM::remove called with context: ";
+  //       for(int i = 0;i < context.size();i++){
+  //           cout << context[i] << ",";
+  //       }
+		// cout <<" w_t: " << w_t << " n_t: " << n_t << endl;
+
+
 		Node* node = _root;
-		for(int depth = 0;depth < n_t;depth++){
-			int u_t = context[w_t_i - depth - 1];
+		for(int depth = 1;depth <= n_t;depth++){
+			id u_t = context[w_t_i - depth];
+			// cout << "u_t: " << u_t << endl;
 			Node* child = node->findChildWithId(u_t);
 			if(child == NULL){
 				return false;
@@ -108,7 +123,7 @@ public:
 		// if(max_order != -1){
 		// 	max_n = w_t_i > max_order ? max_order : w_t_i;
 		// }
-		int w_t = context_ids[w_t_i];
+		id w_t = context_ids[w_t_i];
 		// cout << "w_t: " << w_t << " w_t_i: " << w_t_i << endl;
 		// cout << "_g0: " << _g0 << endl;
 		vector<double> probs;
@@ -140,7 +155,7 @@ public:
 					break;
 				}
 				if(n < w_t_i){
-					int u_t = context_ids[w_t_i - n - 1];
+					id u_t = context_ids[w_t_i - n - 1];
 					// cout << "u_t: " << u_t << endl;
 					node = node->findChildWithId(u_t);
 				}
@@ -182,7 +197,7 @@ public:
 			}
 		}
 		// cout << "return " << probs.size() << endl;
-		return probs.size();
+		return probs.size() - 1;
 	}
 
 	// contextからwordが生成された確率
@@ -219,7 +234,7 @@ public:
 		Node* node = _root;
 		int depth = 0;
 		for(;depth < context_ids.size();depth++){
-			int u_t = context_ids[context_ids.size() - depth - 1];
+			id u_t = context_ids[context_ids.size() - depth - 1];
 			// cout << "u_t: " << u_t << endl;
 			if(node == NULL){
 				break;
@@ -267,7 +282,7 @@ public:
 		Node* node = _root;
 		int depth = 0;
 		for(;depth < n;depth++){
-			int u_t = context_ids[context_ids.size() - depth - 1];
+			id u_t = context_ids[context_ids.size() - depth - 1];
 			// cout << "u_t: " << u_t << endl;
 			if(node == NULL){
 				break;
@@ -315,7 +330,7 @@ public:
 		Node* node = _root;
 		int depth = 0;
 		for(;depth < n;depth++){
-			int u_t = context_ids[context_ids.size() - depth - 1];
+			id u_t = context_ids[context_ids.size() - depth - 1];
 			// cout << "u_t: " << u_t << endl;
 			if(node == NULL){
 				break;
@@ -352,7 +367,7 @@ public:
   //           cout << word_ids[i] << ",";
   //       }
   //       cout << endl;
-		int w_0 = word_ids[0];
+		id w_0 = word_ids[0];
 		// cout << "w_0: " << w_0 << endl;
 		double p0 = _root->Pw(w_0, _g0, _d_m, _theta_m) * _root->p_stop(_beta_stop, _beta_pass);
 		// cout << "p0: " << p0 << endl;
@@ -384,7 +399,7 @@ public:
   //           cout << word_ids[i] << ",";
   //       }
   //       cout << endl;
-		int w_0 = word_ids[0];
+		id w_0 = word_ids[0];
 		// cout << "w_0: " << w_0 << endl;
 		double p0 = _root->Pw(w_0, _g0, _d_m, _theta_m) * _root->p_stop(_beta_stop, _beta_pass);
 		// cout << "p0: " << p0 << endl;
@@ -409,26 +424,60 @@ public:
 
 	id sampleNextWord(vector<id> &context_ids, id eos_id){
 		// どの深さまでノードが存在するかを調べる
+		// int max_n = w_t_i;
+		// if(max_order != -1){
+		// 	max_n = w_t_i > max_order ? max_order : w_t_i;
+		// }
+		// for(int i = 0;i < context_ids.size();i++){
+		// 	cout << context_ids[i] << ",";
+		// }
+		// cout << endl;
+		int w_t_i = context_ids.size() - 1;
+		// cout << "_g0: " << _g0 << endl;
 		Node* node = _root;
-		int depth = sampleOrder(context_ids, context_ids.size() - 1);
+		vector<double> probs;
+		vector<Node*> nodes;
+		double p = _root->p_stop(_beta_stop, _beta_pass);
+		probs.push_back(p);
+		nodes.push_back(node);
+		double sum = 0;
 
-		if(context_ids.size() > 1){
-			for(int n = 0;n < depth;n++){
-				int u_t = context_ids[context_ids.size() - n - 2];
+		for(int n = 0;n <= w_t_i;n++){
+			if(node){
+				id u_t = context_ids[w_t_i - n];
+				node = node->findChildWithId(u_t);
 				if(node == NULL){
 					break;
 				}
-				Node* child = node->findChildWithId(u_t);
-				if(child == NULL){
-					break;
-				}
-				node = child;
+				double p = node->p_stop(_beta_stop, _beta_pass);
+				probs.push_back(p);
+				nodes.push_back(node);
+				sum += p;
 			}
 		}
+		if(sum == 0){
+			return eos_id;
+		}
+		double ratio = 1.0 / sum;
+		uniform_real_distribution<double> rand(0, 1);
+		double r = rand(Sampler::mt);
+		// cout << "rand: " << r << endl;
+		sum = 0;
+		int depth = probs.size();
+		for(int n = 0;n < probs.size();n++){
+			sum += probs[n] * ratio;
+			if(r < sum){
+				// cout << "return " << n << endl;
+				depth = n;
+			}
+		}
+		// cout << "depth: " << depth << endl;
+		node = nodes[depth];
+		// cout << *node << endl;
 
 		vector<id> word_ids;
-		vector<double> probs;
-		double sum = 0;
+		probs.clear();
+		sum = 0;
 		for(auto elem: node->_arrangement){
 			id word_id = elem.first;
 			double p = Pw_h(word_id, context_ids);
@@ -444,8 +493,8 @@ public:
 		if(sum == 0){
 			return eos_id;
 		}
-		double ratio = 1.0 / sum;
-		double r = Sampler::uniform(0, 1);
+		ratio = 1.0 / sum;
+		r = Sampler::uniform(0, 1);
 		sum = 0;
 		id sampled_word_id = word_ids.back();
 		for(int i = 0;i < word_ids.size();i++){

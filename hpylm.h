@@ -67,14 +67,14 @@ public:
 		_root->addCustomer(word_id, _g0, _d_m, _theta_m);
 	}
 	void add(vector<id> &word_ids, int w_t_i){
-		int w_t = word_ids[w_t_i];
+		id w_t = word_ids[w_t_i];
 		// HPYLMでは深さは固定
 		// ただし先頭の文字などmax_depthに満たない例外はある
 		int max_depth = w_t_i > _max_depth ? _max_depth : w_t_i;
 
 		Node* node = _root;
 		for(int depth = 0;depth < max_depth;depth++){
-			int u_t = word_ids[w_t_i - depth - 1];
+			id u_t = word_ids[w_t_i - depth - 1];
 			Node* child = node->generateChildIfNeeded(u_t);
 			if(child == NULL){
 				printf("\x1b[41;97m");
@@ -93,11 +93,11 @@ public:
 	}
 
 	bool remove(vector<id> &word_ids, int w_t_i){
-		int w_t = word_ids[w_t_i];
+		id w_t = word_ids[w_t_i];
 		int max_depth = w_t_i > _max_depth ? _max_depth : w_t_i;
 		Node* node = _root;
 		for(int depth = 0;depth < max_depth;depth++){
-			int u_t = word_ids[w_t_i - depth - 1];
+			id u_t = word_ids[w_t_i - depth - 1];
 			Node* child = node->findChildWithId(u_t);
 			if(child == NULL){
 				return false;
@@ -128,7 +128,7 @@ public:
 		int depth = context_ids.size() < _max_depth ? context_ids.size() : _max_depth;
 
 		for(int n = 0;n < depth;n++){
-			int u_t = context_ids[context_ids.size() - n - 1];
+			id u_t = context_ids[context_ids.size() - n - 1];
 			// cout << "u_t: " << u_t << endl;
 			if(node == NULL){
 				break;
@@ -177,12 +177,11 @@ public:
 	}
 
 	id sampleNextWord(vector<id> &context_ids, id eos_id){
-		// どの深さまでノードが存在するかを調べる
 		Node* node = _root;
 		int depth = context_ids.size() < _max_depth ? context_ids.size() : _max_depth;
 
 		for(int n = 0;n < depth;n++){
-			int u_t = context_ids[context_ids.size() - n - 1];
+			id u_t = context_ids[context_ids.size() - n - 1];
 			if(node == NULL){
 				break;
 			}
@@ -273,7 +272,7 @@ public:
 		sum_log_x_u_m[0] = _root->auxiliary_log_x_u(_theta_m[0]);			// log(x_u)
 		sum_y_ui_m[0] = _root->auxiliary_y_ui(_d_m[0], _theta_m[0]);		// y_ui
 		sum_1_y_ui_m[0] = _root->auxiliary_1_y_ui(_d_m[0], _theta_m[0]);	// 1 - y_ui
-		sum_1_z_uwkj_m[0] = _root->auxiliary_1_z_uwkj(_d_m[0]);			// 1 - z_uwkj
+		sum_1_z_uwkj_m[0] = _root->auxiliary_1_z_uwkj(_d_m[0]);				// 1 - z_uwkj
 
 
 		// それ以外
