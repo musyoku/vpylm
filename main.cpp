@@ -101,20 +101,42 @@ void vpylm_visualize_order(Vocab* vocab, vector<wstring> &dataset, string model_
 	vpylm->load(model_dir);
 	vocab->load(model_dir);
 
-	int num_sample = 50;
-	int max_length = 400;
+	int num_visualize = 50;
+
+	vector<int> rand_perm;
+	for(int i = 0;i < dataset.size();i++){
+		rand_perm.push_back(i);
+	}
+	random_shuffle(rand_perm.begin(), rand_perm.end());
+
 	vector<id> sentence_char_ids;
-	for(int s = 0;s < num_sample;s++){
+	vector<int> orders;
+	for(int step = 0;step < num_visualize;step++){
+
+		int data_index = rand_perm[step];
+
+		wstring sentence = dataset[data_index];
+		if(sentence.length() == 0){
+			continue;
+		}
 		sentence_char_ids.clear();
 		sentence_char_ids.push_back(vocab->bosId());
-		for(int i = 0;i < max_length;i++){
-			id word_id = vpylm->sampleNextWord(sentence_char_ids, vocab->eosId());
-			sentence_char_ids.push_back(word_id);
-			if(word_id == vocab->eosId()){
-				break;
-			}
+		for(int i = 0;i < sentence.length();i++){
+			int id = vocab->char2id(sentence[i]);
+			sentence_char_ids.push_back(id);
+		}
+		sentence_char_ids.push_back(vocab->eosId());
+
+		orders.clear();
+		for(int i = 0;i < sentence_char_ids.size();i++){
+			int order = vpylm->sampleOrder(sentence_char_ids, i);
+			orders.push_back(order);
 		}
 		wcout << vocab->characters2string(sentence_char_ids) << endl;
+		for(int i = 0;i < orders.size();i++){
+			cout << orders[i];
+		}
+		cout << endl << endl;
 	}
 }
 
@@ -346,6 +368,7 @@ int main(int argc, char *argv[]){
 	Vocab* vocab = load(filename, dataset);
 
 	// train_vpylm(vocab, dataset, model_dir);
-	vpylm_generate_sentence(vocab, dataset, model_dir);
+	// vpylm_generate_sentence(vocab, dataset, model_dir);
+	vpylm_visualize_order(vocab, dataset, model_dir);
 	return 0;
 }
