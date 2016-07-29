@@ -370,6 +370,13 @@ public:
 		return _root->numCustomers();
 	}
 
+	int _sum_stop_counts(){
+		return _root->_sum_stop_counts();
+	}
+	int _sum_pass_counts(){
+		return _root->_sum_pass_counts();
+	}
+
 	void save(string dir = "model/"){
 		string filename = dir + "vpylm.model";
 		std::ofstream ofs(filename);

@@ -315,6 +315,8 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 	cout << vpylm->maxDepth() << endl;
 	cout << vpylm->numChildNodes() << endl;
 	cout << vpylm->numCustomers() << endl;
+	cout << vpylm->_sum_stop_counts() << endl;
+	cout << vpylm->_sum_pass_counts() << endl;
 }
 
 int main(int argc, char *argv[]){

@@ -29,7 +29,7 @@ private:
 			_num_customers++;
 			_num_tables++;
 			if(_parent != NULL){
-				_parent->addCustomer(word_id, parent_p_w, d_m, theta_m);
+				_parent->addCustomer(word_id, parent_p_w, d_m, theta_m, false);
 			}
 			return true;
 		}
@@ -51,7 +51,7 @@ private:
 		_num_tables++;
 		_num_customers++;
 		if(_parent != NULL){
-			_parent->addCustomer(word_id, parent_p_w, d_m, theta_m);
+			_parent->addCustomer(word_id, parent_p_w, d_m, theta_m, false);
 		}
 		return true;
 	}
@@ -73,7 +73,7 @@ private:
 			if(tables[k] == 0){
 				if(_parent != NULL){
 					bool should_remove_from_parent = false;
-					_parent->removeCustomer(word_id, should_remove_from_parent);
+					_parent->removeCustomer(word_id, should_remove_from_parent, false);
 				}
 				tables.erase(tables.begin() + k);
 				_num_tables--;
@@ -166,7 +166,7 @@ public:
 		}
 		return child;
 	}
-	void addCustomer(id word_id, double parent_p_w, vector<double> &d_m, vector<double> &theta_m){
+	void addCustomer(id word_id, double parent_p_w, vector<double> &d_m, vector<double> &theta_m, bool update_n = true){
 		if(_depth >= d_m.size()){
 			while(d_m.size() <= _depth){
 				d_m.push_back(PYLM_INITIAL_D);
@@ -185,7 +185,9 @@ public:
 				printf("\x1b[49;39m");
 				printf(" Failed to add a customer to an empty _arrangement\n");
 			}
-			incrementStopCount();
+			if(update_n == true){
+				incrementStopCount();
+			}
 		}else{
 			vector<int> &tables = _arrangement[word_id];
 			double rand_max = 0.0;
@@ -210,17 +212,21 @@ public:
 						printf("\x1b[49;39m");
 						printf(" Failed to add a customer\n");
 					}
-					incrementStopCount();
+					if(update_n){
+						incrementStopCount();
+					}
 					return;
 				}
 			}
 
 			addCustomerToNewTableWithId(word_id, parent_p_w, d_m, theta_m);
-			incrementStopCount();
+			if(update_n){
+				incrementStopCount();
+			}
 		}
 	}
 
-	bool removeCustomer(id word_id, bool &should_remove_from_parent){
+	bool removeCustomer(id word_id, bool &should_remove_from_parent, bool update_n = true){
 		should_remove_from_parent = false;
 		if(_arrangement.find(word_id) == _arrangement.end()){
 			return false;
@@ -245,7 +251,9 @@ public:
 					printf("\x1b[49;39m");
 					printf(" Failed to remove a customer.\n");
 				}
-				decrementStopCount();
+				if(update_n == true){
+					decrementStopCount();
+				}
 				if(_children.size() == 0 and _arrangement.size() == 0){
 					should_remove_from_parent = true;
 				}
@@ -258,7 +266,9 @@ public:
 			printf("\x1b[49;39m");
 			printf(" Failed to remove a customer.\n");
 		}
-		decrementStopCount();
+		if(update_n == true){
+			decrementStopCount();
+		}
 
 		if(_children.size() == 0 and _arrangement.size() == 0){
 			should_remove_from_parent = true;
@@ -398,6 +408,22 @@ public:
 			num += elem.second->numChildNodes();
 		}
 		return num;
+	}
+
+	int _sum_pass_counts(){
+		int sum = _pass_count;
+		for(auto elem: _children){
+			sum += elem.second->_sum_pass_counts();
+		}
+		return sum;
+	}
+
+	int _sum_stop_counts(){
+		int sum = _stop_count;
+		for(auto elem: _children){
+			sum += elem.second->_sum_pass_counts();
+		}
+		return sum;
 	}
 
 	int numCustomers(){
