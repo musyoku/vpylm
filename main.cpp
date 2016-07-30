@@ -142,7 +142,7 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 	vector<id> sentence_char_ids;
 
-	int max_epoch = 1000;
+	int max_epoch = 500;
 	// int train_per_epoch = dataset.size();
 	int train_per_epoch = dataset.size();
 
@@ -260,7 +260,7 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 		cout << endl << "[epoch " << epoch << "] " <<  (double)train_per_epoch / msec * 1000.0 << " sentences / sec; perplexity " << vpylm_ppl << endl;
 
-		if(epoch % 10 == 0){
+		if(epoch % 100 == 0){
 			vpylm->save(model_dir);
 			vocab->save(model_dir);
 		}
@@ -362,7 +362,7 @@ int main(int argc, char *argv[]){
 
 	Vocab* vocab = load(filename, dataset);
 
-	train_vpylm(vocab, dataset, model_dir);
+	// train_vpylm(vocab, dataset, model_dir);
 	vpylm_generate_sentence(vocab, dataset, model_dir);
 	vpylm_visualize_order(vocab, dataset, model_dir);
 	return 0;
