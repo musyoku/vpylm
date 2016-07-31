@@ -55,7 +55,7 @@ void show_progress(int step, int total, double &progress){
 	cout << "] " << int(progress * 100.0) << " %\r";
 	cout.flush();
 
-	progress += 0.16; // for demonstration only
+	progress += 0.16;
 }
 
 
@@ -143,7 +143,6 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 	vector<id> sentence_char_ids;
 
 	int max_epoch = 500;
-	// int train_per_epoch = dataset.size();
 	int train_per_epoch = dataset.size();
 
 	vector<int> rand_perm;
@@ -166,9 +165,6 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 	printf("training in progress...\n");
 	for(int epoch = 1;epoch <= max_epoch;epoch++){
-		// cout << "##########################################" << endl;
-		// cout << "EPOCH " << epoch << endl;
-		// cout << "##########################################" << endl;
 		auto start_time = chrono::system_clock::now();
 		double progress = 0.0;
 		random_shuffle(rand_perm.begin(), rand_perm.end());
@@ -243,9 +239,6 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 			if(sentence.length() == 0){
 				continue;
 			}
-			// if(sentence.length() > 200){
-			// 	continue;
-			// }
 			sentence_char_ids.clear();
 			sentence_char_ids.push_back(vocab->bosId());
 			for(int i = 0;i < sentence.length();i++){
