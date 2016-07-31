@@ -267,42 +267,42 @@ void train_vpylm(Vocab* vocab, vector<wstring> &dataset, string model_dir){
 
 	// <!-- デバッグ用
 	// 客を全て削除した時に客数が本当に0になるかを確認する場合
-	for(int step = 0;step < train_per_epoch;step++){
-		int data_index = rand_perm[step];
+	// for(int step = 0;step < train_per_epoch;step++){
+	// 	int data_index = rand_perm[step];
 
-		wstring sentence = dataset[data_index];
-		if(sentence.length() == 0){
-			continue;
-		}
-		sentence_char_ids.clear();
-		sentence_char_ids.push_back(vocab->bosId());
-		for(int i = 0;i < sentence.length();i++){
-			int id = vocab->char2id(sentence[i]);
-			sentence_char_ids.push_back(id);
-		}
-		sentence_char_ids.push_back(vocab->eosId());
+	// 	wstring sentence = dataset[data_index];
+	// 	if(sentence.length() == 0){
+	// 		continue;
+	// 	}
+	// 	sentence_char_ids.clear();
+	// 	sentence_char_ids.push_back(vocab->bosId());
+	// 	for(int i = 0;i < sentence.length();i++){
+	// 		int id = vocab->char2id(sentence[i]);
+	// 		sentence_char_ids.push_back(id);
+	// 	}
+	// 	sentence_char_ids.push_back(vocab->eosId());
 
-		if(prev_orders.find(data_index) != prev_orders.end()){
-			vector<int> &prev_order = prev_orders[data_index];
-			if(prev_order.size() != sentence_char_ids.size()){
-				printf("\x1b[41;97m");
-				printf("WARNING");
-				printf("\x1b[49;39m");
-				printf(" prev_order missmatch.\n");
-			}else{
-				for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
-					int n_t = prev_order[c_t_i];
-					bool success = vpylm->remove(sentence_char_ids, c_t_i, n_t);
-					if(success == false){
-						printf("\x1b[41;97m");
-						printf("WARNING");
-						printf("\x1b[49;39m");
-						printf(" Failed to remove a customer from VPYLM.\n");
-					}
-				}
-			}
-		}
-	}
+	// 	if(prev_orders.find(data_index) != prev_orders.end()){
+	// 		vector<int> &prev_order = prev_orders[data_index];
+	// 		if(prev_order.size() != sentence_char_ids.size()){
+	// 			printf("\x1b[41;97m");
+	// 			printf("WARNING");
+	// 			printf("\x1b[49;39m");
+	// 			printf(" prev_order missmatch.\n");
+	// 		}else{
+	// 			for(int c_t_i = 0;c_t_i < sentence_char_ids.size();c_t_i++){
+	// 				int n_t = prev_order[c_t_i];
+	// 				bool success = vpylm->remove(sentence_char_ids, c_t_i, n_t);
+	// 				if(success == false){
+	// 					printf("\x1b[41;97m");
+	// 					printf("WARNING");
+	// 					printf("\x1b[49;39m");
+	// 					printf(" Failed to remove a customer from VPYLM.\n");
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	//  -->
 
 	cout << vpylm->maxDepth() << endl;
