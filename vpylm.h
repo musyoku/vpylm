@@ -260,12 +260,12 @@ public:
 		id w_0 = word_ids[0];
 		double p0 = _root->Pw(w_0, _g0, _d_m, _theta_m) * _root->p_stop(_beta_stop, _beta_pass);
 		double p = p0;
-		vector<id> h(word_ids.begin(), word_ids.begin() + 1);
+		vector<id> context_ids(word_ids.begin(), word_ids.begin() + 1);
 		for(int depth = 1;depth < word_ids.size();depth++){
-			vector<id> w = {word_ids[depth]};
-			double _p = Pw_h(w, h);
+			id word = word_ids[depth];
+			double _p = Pw_h(word, context_ids);
 			p *= _p;
-			h.push_back(word_ids[depth]);
+			context_ids.push_back(word_ids[depth]);
 		}
 		return p;
 	}
