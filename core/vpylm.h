@@ -47,14 +47,12 @@ public:
 		_beta_stop = 4;
 		_beta_pass = 1;
 	}
-	
-	// order_tはw_tから見た深さ
-	bool add_customer_at_timestep(vector<id> &token_ids, int token_t_index, int order_t){
-		if(order_t > token_t_index){
+	bool add_customer_at_timestep(vector<id> &token_ids, int token_t_index, int depth_t){
+		if(depth_t > token_t_index){
 			c_printf("[r]%s [*]%s\n", "エラー:", "客を追加できません. 不正な深さです.");
 			return false;
 		}
-		Node* node = find_node_by_tracing_back_context(token_ids, token_t_index, order_t, true);
+		Node* node = find_node_by_tracing_back_context(token_ids, token_t_index, depth_t, true);
 		if(node == NULL){
 			c_printf("[r]%s [*]%s\n", "エラー:", "客を追加できません. ノードが見つかりません.");
 			return false;
@@ -62,8 +60,8 @@ public:
 		id token_t = token_ids[token_t_index];
 		return node->add_customer(token_t, _g0, _d_m, _theta_m);
 	}
-	bool remove_customer_at_timestep(vector<id> &token_ids, int token_t_index, int order_t){
-		Node* node = find_node_by_tracing_back_context(token_ids, token_t_index, order_t, true);
+	bool remove_customer_at_timestep(vector<id> &token_ids, int token_t_index, int depth_t){
+		Node* node = find_node_by_tracing_back_context(token_ids, token_t_index, depth_t, true);
 		if(node == NULL){
 			c_printf("[r]%s [*]%s\n", "エラー:", "客を除去できません. ノードが見つかりません.");
 			return false;
@@ -77,17 +75,16 @@ public:
 		}
 		return true;
 	}
-	int sample_order_at_timestep(vector<id> &context_token_ids, int token_t_index){
+	int sample_depth_at_timestep(vector<id> &context_token_ids, int token_t_index){
 		if(token_t_index == 0){
 			return 0;
 		}
 		id token_t = context_token_ids[token_t_index];
-		vector<double> probs;
-		double sum_p_stpp = 0;
 
 		// この値を下回れば打ち切り
 		double eps = 1e-6;
 		
+		vector<double> probs;
 		double sum = 0;
 		double p_pass = 0;
 		double Pw = 0;
@@ -99,9 +96,7 @@ public:
 				p_pass = node->pass_probability(_beta_stop, _beta_pass);
 				double p = Pw * p_stop;
 				probs.push_back(p);
-				sum_p_stpp += p_stop;
-				sum += probs[n];
-
+				sum += p;
 				if(p < eps){
 					break;
 				}
@@ -113,8 +108,7 @@ public:
 				double p_stop = p_pass * _beta_stop / (_beta_stop + _beta_pass);
 				double p = Pw * p_stop;
 				probs.push_back(p);
-				sum_p_stpp += p_stop;
-				sum += probs[n];
+				sum += p;
 				p_pass *= _beta_pass / (_beta_stop + _beta_pass);
 				if(p < eps){
 					break;
