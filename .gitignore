@@ -1,0 +1,14 @@
+# ignore all
+*
+
+# allow any
+!dataset/
+!dataset/alice.txt
+!dataset/wiki.txt
+!*/
+!*.py
+!*.cpp
+!*.h
+!*.md
+!.gitignore
+!.makefile
