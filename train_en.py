@@ -37,8 +37,8 @@ def main(args):
 		if epoch % 10 == 0:
 			log_likelihood = vpylm.compute_log_Pdataset_test() 
 			perplexity = vpylm.compute_perplexity_test()
-			print "\nlog_likelihood:", int(log_likelihood)
-			print "perplexity:", int(perplexity)
+			print "\nlog_likelihood:", int(log_likelihood), int(vpylm.compute_log_Pdataset_train())
+			print "perplexity:", int(perplexity), int(vpylm.compute_perplexity_train())
 			vpylm.save(args.model);
 			# CSV出力
 			csv_likelihood.append([epoch, log_likelihood])
