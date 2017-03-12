@@ -32,7 +32,7 @@ def main(args):
 		vpylm.sample_hyperparameters()
 
 		elapsed_time = time.time() - start
-		sys.stdout.write("\rEpoch {} / {} - {:.3f} sec - {} nodes - {} customers".format(epoch, args.epoch, elapsed_time, vpylm.get_num_nodes(), vpylm.get_num_customers()))		
+		sys.stdout.write("\rEpoch {} / {} - {:.3f} sec - {} depth - {} nodes - {} customers".format(epoch, args.epoch, elapsed_time, vpylm.get_vpylm_depth(), vpylm.get_num_nodes(), vpylm.get_num_customers()))		
 		sys.stdout.flush()
 		if epoch % 10 == 0:
 			log_likelihood = vpylm.compute_log_Pdataset_test() 

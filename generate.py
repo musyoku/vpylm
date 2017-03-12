@@ -4,10 +4,10 @@ import model
 
 def main(args):
 	assert os.path.exists(args.model)
-	hpylm = model.hpylm()
-	hpylm.load(args.model)
+	vpylm = model.vpylm()
+	vpylm.load(args.model)
 	for n in xrange(args.num_generate):
-		print hpylm.generate_sentence()
+		print vpylm.generate_sentence()
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()

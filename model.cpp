@@ -69,6 +69,10 @@ public:
 		_vpylm_loaded = false;
 		_is_ready = false;
 	}
+	~PyVPYLM(){
+		delete  _vpylm;
+		delete  _vocab;
+	}
 	void load_textfile(string filename, int train_split){
 		c_printf("[*]%s\n", (boost::format("%sを読み込んでいます ...") % filename.c_str()).str().c_str());
 		wifstream ifs(filename.c_str());
@@ -209,14 +213,14 @@ public:
 	int get_num_words(){
 		return _sum_word_count;
 	}
-	int get_hpylm_depth(){
+	int get_vpylm_depth(){
 		return _vpylm->_depth;
 	}
 	id get_bos_id(){
 		return ID_BOS;
 	}
 	id get_eos_id(){
-		return ID_BOS;
+		return ID_EOS;
 	}
 	python::list count_tokens_of_each_depth(){
 		unordered_map<int, int> counts_by_depth;
@@ -277,9 +281,7 @@ public:
 	}
 	wstring generate_sentence(){
 		std::vector<id> context_token_ids;
-		for(int i = 0;i < _vpylm->_depth;i++){
-			context_token_ids.push_back(ID_BOS);
-		}
+		context_token_ids.push_back(ID_BOS);
 		for(int n = 0;n < 1000;n++){
 			id next_id = _vpylm->sample_next_token(context_token_ids);
 			if(next_id == ID_EOS){
@@ -296,6 +298,7 @@ BOOST_PYTHON_MODULE(model){
 	python::class_<PyVPYLM>("vpylm", python::init<>())
 	.def("set_g0", &PyVPYLM::set_g0)
 	.def("load_textfile", &PyVPYLM::load_textfile)
+	.def("compile", &PyVPYLM::compile)
 	.def("perform_gibbs_sampling", &PyVPYLM::perform_gibbs_sampling)
 	.def("get_num_nodes", &PyVPYLM::get_num_nodes)
 	.def("get_num_customers", &PyVPYLM::get_num_customers)
@@ -305,7 +308,7 @@ BOOST_PYTHON_MODULE(model){
 	.def("get_num_test_data", &PyVPYLM::get_num_test_data)
 	.def("get_num_types_of_words", &PyVPYLM::get_num_types_of_words)
 	.def("get_num_words", &PyVPYLM::get_num_words)
-	.def("get_hpylm_depth", &PyVPYLM::get_hpylm_depth)
+	.def("get_vpylm_depth", &PyVPYLM::get_vpylm_depth)
 	.def("get_bos_id", &PyVPYLM::get_bos_id)
 	.def("get_eos_id", &PyVPYLM::get_eos_id)
 	.def("sample_hyperparameters", &PyVPYLM::sample_hyperparameters)

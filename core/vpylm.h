@@ -252,8 +252,8 @@ public:
 		Node* node = _root;
 		vector<double> probs;
 		vector<Node*> nodes;
-		double p = _root->stop_probability(_beta_stop, _beta_pass);
-		probs.push_back(p);
+		double pstop = _root->stop_probability(_beta_stop, _beta_pass);
+		probs.push_back(pstop);
 		nodes.push_back(node);
 		double sum = 0;
 
@@ -264,10 +264,10 @@ public:
 				if(node == NULL){
 					break;
 				}
-				double p = node->stop_probability(_beta_stop, _beta_pass);
-				probs.push_back(p);
+				double pstop = node->stop_probability(_beta_stop, _beta_pass);
+				probs.push_back(pstop);
 				nodes.push_back(node);
-				sum += p;
+				sum += pstop;
 			}
 		}
 		if(sum == 0){
