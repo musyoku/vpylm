@@ -6,12 +6,9 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <vector>
-#include <random>
-#include <cmath>
 #include <cassert>
 #include <unordered_map> 
 #include <fstream>
-#include <iostream>
 #include "sampler.h"
 #include "node.h"
 
