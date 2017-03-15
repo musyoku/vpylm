@@ -3,6 +3,11 @@ import argparse, sys, os, time, re, codecs, random
 import pandas as pd
 import model
 
+class stdout:
+	BOLD = "\033[1m"
+	END = "\033[0m"
+	CLEAR = "\033[2K"
+
 def main(args):
 	try:
 		os.mkdir(args.model)
@@ -13,7 +18,10 @@ def main(args):
 	assert args.train_split is not None
 
 	vpylm = model.vpylm()
-	vpylm.load_textfile(args.filename, args.train_split)
+	print stdout.BOLD + args.filename + "を読み込んでいます ..." + stdout.END
+	assert vpylm.load_textfile(args.filename, args.train_split) == True
+	print stdout.BOLD + args.filename + "を読み込みました." + stdout.END
+
 	print "訓練データ数:	", vpylm.get_num_train_data() 
 	print "テストデータ数:	", vpylm.get_num_test_data()
 	print "語彙数:		", vpylm.get_num_types_of_words()

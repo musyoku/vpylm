@@ -3,7 +3,6 @@
 #include <iostream>
 #include <string>
 #include <unordered_map> 
-#include "core/c_printf.h"
 #include "core/node.h"
 #include "core/vpylm.h"
 #include "core/vocab.h"
@@ -73,20 +72,18 @@ public:
 		delete  _vpylm;
 		delete  _vocab;
 	}
-	void load_textfile(string filename, int train_split){
-		c_printf("[*]%s\n", (boost::format("%sを読み込んでいます ...") % filename.c_str()).str().c_str());
+	bool load_textfile(string filename, int train_split){
 		wifstream ifs(filename.c_str());
-		wstring line_str;
+		wstring sentence;
 		if (ifs.fail()){
-			c_printf("[R]%s [*]%s", "エラー", (boost::format("%sを開けません.") % filename.c_str()).str().c_str());
-			exit(1);
+			return false;
 		}
 		vector<wstring> lines;
-		while (getline(ifs, line_str) && !line_str.empty()){
+		while (getline(ifs, sentence) && !sentence.empty()){
 			if (PyErr_CheckSignals() != 0) {		// ctrl+cが押されたかチェック
-				return;
+				return false;
 			}
-			lines.push_back(line_str);
+			lines.push_back(sentence);
 		}
 		assert(lines.size() > train_split);
 		vector<int> rand_indices;
@@ -95,38 +92,38 @@ public:
 		}
 		shuffle(rand_indices.begin(), rand_indices.end(), Sampler::mt);	// データをシャッフル
 		for(int i = 0;i < rand_indices.size();i++){
-			wstring &line_str = lines[rand_indices[i]];
+			wstring &sentence = lines[rand_indices[i]];
 			if(i < train_split){
-				add_train_data(line_str);
+				add_train_data(sentence);
 			}else{
-				add_test_data(line_str);
+				add_test_data(sentence);
 			}
 		}
-		c_printf("[*]%s\n", (boost::format("%sを読み込みました.") % filename.c_str()).str().c_str());
+		return true;
 	}
-	void add_train_data(wstring line_str){
-		_add_data_to(line_str, _dataset_train);
+	void add_train_data(wstring sentence){
+		_add_data_to(sentence, _dataset_train);
 	}
-	void add_test_data(wstring line_str){
-		_add_data_to(line_str, _dataset_test);
+	void add_test_data(wstring sentence){
+		_add_data_to(sentence, _dataset_test);
 	}
-	void _add_data_to(wstring &line_str, vector<vector<id>> &dataset){
-		vector<wstring> word_str_array;
-		split_word_by(line_str, L' ', word_str_array);	// スペースで分割
-		if(word_str_array.size() > 0){
-			vector<id> words;
-			words.push_back(ID_BOS);
-			for(auto word_str: word_str_array){
-				if(word_str.size() == 0){
+	void _add_data_to(wstring &sentence, vector<vector<id>> &dataset){
+		vector<wstring> words;
+		split_word_by(sentence, L' ', words);	// スペースで分割
+		if(words.size() > 0){
+			vector<id> tokens;
+			tokens.push_back(ID_BOS);
+			for(auto word: words){
+				if(word.size() == 0){
 					continue;
 				}
-				id token_id = _vocab->add_string(word_str);
-				words.push_back(token_id);
+				id token_id = _vocab->add_string(word);
+				tokens.push_back(token_id);
 				_word_count[token_id] += 1;
 				_sum_word_count += 1;
 			}
-			words.push_back(ID_EOS);
-			dataset.push_back(words);
+			tokens.push_back(ID_EOS);
+			dataset.push_back(tokens);
 		}
 	}
 	void compile(){
