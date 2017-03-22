@@ -19,13 +19,6 @@ private:
 	unordered_map<id, wstring> _string_by_token_id;
 	hash<wstring> _hash_func;
 	
-	friend class boost::serialization::access;
-	template <class Archive>
-	void serialize(Archive& archive, unsigned int version)
-	{
-		static_cast<void>(version); // No use
-		archive & _string_by_token_id;
-	}
 public:
 	Vocab(){
 		_string_by_token_id[ID_BOS] = L"<bos>";
@@ -56,12 +49,16 @@ public:
 	int num_tokens(){
 		return _string_by_token_id.size();
 	}
+	template <class Archive>
+	void serialize(Archive& archive, unsigned int version)
+	{
+		archive & _string_by_token_id;
+	}
 	void save(string filename = "hpylm.vocab"){
 		std::ofstream ofs(filename);
 		boost::archive::binary_oarchive oarchive(ofs);
 		oarchive << *this;
 	}
-
 	void load(string filename = "hpylm.vocab"){
 		std::ifstream ifs(filename);
 		if(ifs.good()){

@@ -13,23 +13,6 @@
 #include "node.h"
 
 class VPYLM{
-private:
-	friend class boost::serialization::access;
-	template <class Archive>
-	void serialize(Archive& archive, unsigned int version)
-	{
-		static_cast<void>(version); // No use
-		archive & _root;
-		archive & _g0;
-		archive & _beta_stop;
-		archive & _beta_pass;
-		archive & _d_m;
-		archive & _theta_m;
-		archive & _a_m;
-		archive & _b_m;
-		archive & _alpha_m;
-		archive & _beta_m;
-	}
 public:
 	Node* _root;				// 文脈木のルートノード
 	int _depth;					// 最大の深さ
@@ -499,6 +482,20 @@ public:
 			}
 			phrases.push_back(phrase);
 		}
+	}
+	template <class Archive>
+	void serialize(Archive& archive, unsigned int version)
+	{
+		archive & _root;
+		archive & _g0;
+		archive & _beta_stop;
+		archive & _beta_pass;
+		archive & _d_m;
+		archive & _theta_m;
+		archive & _a_m;
+		archive & _b_m;
+		archive & _alpha_m;
+		archive & _beta_m;
 	}
 	bool save(string filename = "hpylm.model"){
 		std::ofstream ofs(filename);

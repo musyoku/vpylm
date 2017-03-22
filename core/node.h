@@ -67,21 +67,6 @@ private:
 		}
 		return true;
 	}
-	friend class boost::serialization::access;
-	template <class Archive>
-	void serialize(Archive& archive, unsigned int version)
-	{
-		static_cast<void>(version); // No use
-		archive & _children;
-		archive & _arrangement;
-		archive & _num_tables;
-		archive & _num_customers;
-		archive & _parent;
-		archive & _stop_count;
-		archive & _pass_count;
-		archive & _token_id;
-		archive & _depth;
-	}
 public:
 	hashmap<id, Node*> _children;					// 子の文脈木
 	hashmap<id, vector<int>> _arrangement;			// 客の配置 vector<int>のk番目の要素がテーブルkの客数を表す
@@ -436,6 +421,19 @@ public:
 				theta_m.push_back(HPYLM_INITIAL_THETA);
 			}
 		}
+	}
+	template <class Archive>
+	void serialize(Archive& archive, unsigned int version)
+	{
+		archive & _children;
+		archive & _arrangement;
+		archive & _num_tables;
+		archive & _num_customers;
+		archive & _parent;
+		archive & _stop_count;
+		archive & _pass_count;
+		archive & _token_id;
+		archive & _depth;
 	}
 	friend ostream& operator<<(ostream& os, const Node& node){
 		os << "[id." << node._token_id << ":depth." << node._depth << "]" << endl;
