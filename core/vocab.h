@@ -59,7 +59,7 @@ public:
 	void save(string filename = "hpylm.vocab"){
 		std::ofstream ofs(filename);
 		boost::archive::binary_oarchive oarchive(ofs);
-		oarchive << static_cast<const Vocab&>(*this);
+		oarchive << *this;
 	}
 
 	void load(string filename = "hpylm.vocab"){
