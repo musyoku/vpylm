@@ -2,8 +2,9 @@
 using namespace std;
 
 void test_train(){
+    string dirname = "out";
 	PyVPYLM* model = new PyVPYLM();
-	model->load_textfile("dataset/alice.txt", 1100);
+	model->load_textfile("dataset/wiki.txt", 45000);
 	model->set_g0(1.0 / model->get_num_types_of_words());
 	model->compile();
 
@@ -13,6 +14,13 @@ void test_train(){
 		double log_likelihood = model->compute_log_Pdataset_test();
 		cout << ppl << ", " << log_likelihood << endl;
 	}
+	printf("# of nodes: %d\n", model->_vpylm->get_num_nodes());
+	printf("# of customers: %d\n", model->_vpylm->get_num_customers());
+	printf("# of tables: %d\n", model->_vpylm->get_num_tables());
+	printf("stop count: %d\n", model->_vpylm->get_sum_stop_counts());
+	printf("pass count: %d\n", model->_vpylm->get_sum_pass_counts());
+	model->save(dirname);
+	model->load(dirname);
 	printf("# of nodes: %d\n", model->_vpylm->get_num_nodes());
 	printf("# of customers: %d\n", model->_vpylm->get_num_customers());
 	printf("# of tables: %d\n", model->_vpylm->get_num_tables());
@@ -29,7 +37,7 @@ void test_train(){
 }
 
 int main(int argc, char *argv[]){
-	for(int i = 0;i < 10;i++){
+	for(int i = 0;i < 1;i++){
 		test_train();
 	}
 }

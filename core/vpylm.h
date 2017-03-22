@@ -1,5 +1,4 @@
-#ifndef _vpylm_
-#define _vpylm_
+#pragma once
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -10,6 +9,7 @@
 #include <unordered_map> 
 #include <fstream>
 #include "sampler.h"
+#include "common.h"
 #include "node.h"
 
 class VPYLM{
@@ -47,6 +47,9 @@ public:
 	vector<double> _beta_m;		// ガンマ分布のパラメータ	θの推定用
 	double _beta_stop;		// 停止確率q_iのベータ分布の初期パラメータ
 	double _beta_pass;		// 停止確率q_iのベータ分布の初期パラメータ
+	// 計算高速化用
+	int _max_depth;
+	double* _sampling_table;
 
 	VPYLM(){
 		_root = new Node(0);
@@ -55,9 +58,12 @@ public:
 		// しかしVPYLMは初期値にあまり依存しないらしい
 		_beta_stop = VPYLM_BETA_STOP;
 		_beta_pass = VPYLM_BETA_PASS;
+		_max_depth = 999;
+		_sampling_table = new double[_max_depth];
 	}
 	~VPYLM(){
 		_delete_node(_root);
+		delete[] _sampling_table;
 	}
 	void _delete_node(Node* node){
 		for(auto &elem: node->_children){
@@ -70,6 +76,9 @@ public:
 		assert(0 <= depth_t && depth_t <= token_t_index);
 		Node* node = find_node_by_tracing_back_context(token_ids, token_t_index, depth_t, true);
 		assert(node != NULL);
+		if(depth_t > 0){
+			assert(node->_token_id == token_ids[token_t_index - depth_t]);
+		}
 		id token_t = token_ids[token_t_index];
 		return node->add_customer(token_t, _g0, _d_m, _theta_m);
 	}
@@ -77,6 +86,9 @@ public:
 		assert(0 <= depth_t && depth_t <= token_t_index);
 		Node* node = find_node_by_tracing_back_context(token_ids, token_t_index, depth_t, true);
 		assert(node != NULL);
+		if(depth_t > 0){
+			assert(node->_token_id == token_ids[token_t_index - depth_t]);
+		}
 		id token_t = token_ids[token_t_index];
 		node->remove_customer(token_t);
 		// 客が一人もいなくなったらノードを削除する
@@ -94,10 +106,10 @@ public:
 		// この値を下回れば打ち切り
 		double eps = 1e-6;
 		
-		vector<double> probs;
 		double sum = 0;
 		double p_pass = 0;
 		double Pw = 0;
+		int sampling_table_size = 0;
 		Node* node = _root;
 		for(int n = 0;n <= token_t_index;n++){
 			if(node){
@@ -105,7 +117,9 @@ public:
 				double p_stop = node->stop_probability(_beta_stop, _beta_pass);
 				p_pass = node->pass_probability(_beta_stop, _beta_pass);
 				double p = Pw * p_stop;
-				probs.push_back(p);
+				// probs.push_back(p);
+				_sampling_table[n] = p;
+				sampling_table_size += 1;
 				sum += p;
 				if(p < eps){
 					break;
@@ -117,7 +131,9 @@ public:
 			}else{
 				double p_stop = p_pass * _beta_stop / (_beta_stop + _beta_pass);
 				double p = Pw * p_stop;
-				probs.push_back(p);
+				// probs.push_back(p);
+				_sampling_table[n] = p;
+				sampling_table_size += 1;
 				sum += p;
 				p_pass *= _beta_pass / (_beta_stop + _beta_pass);
 				if(p < eps){
@@ -129,13 +145,13 @@ public:
 		uniform_real_distribution<double> rand(0, 1);
 		double bernoulli = rand(Sampler::mt);
 		double stack = 0;
-		for(int n = 0;n < probs.size();n++){
-			stack += probs[n] * normalizer;
+		for(int n = 0;n < sampling_table_size;n++){
+			stack += _sampling_table[n] * normalizer;
 			if(bernoulli < stack){
 				return n;
 			}
 		}
-		return probs.size() - 1;
+		return _sampling_table[sampling_table_size - 1];
 	}
 	double compute_Pw_given_h(vector<id> &word_ids, vector<id> context_token_ids){
 		double p = 1;
@@ -487,7 +503,7 @@ public:
 	bool save(string filename = "hpylm.model"){
 		std::ofstream ofs(filename);
 		boost::archive::binary_oarchive oarchive(ofs);
-		oarchive << static_cast<const VPYLM&>(*this);
+		oarchive << *this;
 		return true;
 	}
 	bool load(string filename = "hpylm.model"){
@@ -500,5 +516,3 @@ public:
 		return true;
 	}
 };
-
-#endif

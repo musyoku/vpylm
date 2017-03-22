@@ -1,15 +1,14 @@
-﻿#ifndef _node_
-#define _node_
+﻿#pragma once
 #include <boost/serialization/serialization.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/unordered_map.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
-#include <unordered_map>
 #include <string>
 #include <vector>
 #include <cassert>
+#include <unordered_map>
 #include <fstream>
 #include "common.h"
 #include "sampler.h"
@@ -82,13 +81,10 @@ private:
 		archive & _pass_count;
 		archive & _token_id;
 		archive & _depth;
-		archive & _identifier;
-		archive & _auto_increment;
 	}
 public:
-	static id _auto_increment;						// identifier用 VPYLMとは無関係
-	unordered_map<id, Node*> _children;				// 子の文脈木
-	unordered_map<id, vector<int>> _arrangement;		// 客の配置 vector<int>のk番目の要素がテーブルkの客数を表す
+	hashmap<id, Node*> _children;					// 子の文脈木
+	hashmap<id, vector<int>> _arrangement;			// 客の配置 vector<int>のk番目の要素がテーブルkの客数を表す
 	Node* _parent;									// 親ノード
 	int _num_tables;								// 総テーブル数
 	int _num_customers;								// 客の総数
@@ -96,15 +92,12 @@ public:
 	int _pass_count;								// 通過回数. VPYLM用
 	int _depth;										// ノードの深さ　rootが0
 	id _token_id;									// 単語ID　文字ID
-	id _identifier;									// 識別用　特別な意味は無い VPYLMとは無関係
 
 	Node(id token_id = 0){
 		_num_tables = 0;
 		_num_customers = 0;
 		_stop_count = 0;
 		_pass_count = 0;
-		_identifier = _auto_increment;
-		_auto_increment++;
 		_token_id = token_id;
 		_parent = NULL;
 	}
@@ -445,7 +438,7 @@ public:
 		}
 	}
 	friend ostream& operator<<(ostream& os, const Node& node){
-		os << "[Node." << node._identifier << ":id." << node._token_id << ":depth." << node._depth << "]" << endl;
+		os << "[id." << node._token_id << ":depth." << node._depth << "]" << endl;
 		os << "_num_tables: " << node._num_tables << ", _num_customers: " << node._num_customers << endl;
 		os << "_stop_count: " << node._stop_count << ", _pass_count: " << node._pass_count << endl;
 		os << "- _arrangement" << endl;
@@ -461,13 +454,8 @@ public:
 		os << "- _children" << endl;
 		os << "    ";
 		for(auto elem: node._children){
-			os << "  [Node." << elem.second->_identifier << ":id." << elem.first << "]" << ",";
 		}
 		os << endl;
 		return os;
 	}
 };
-
-id Node::_auto_increment = 1;
-
-#endif
