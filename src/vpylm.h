@@ -125,8 +125,7 @@ public:
 			}
 		}
 		double normalizer = 1.0 / sum;
-		uniform_real_distribution<double> rand(0, 1);
-		double bernoulli = rand(Sampler::mt);
+		double bernoulli = sampler::uniform(0, 1);
 		double stack = 0;
 		for(int n = 0;n < sampling_table_size;n++){
 			stack += _sampling_table[n] * normalizer;
@@ -270,7 +269,7 @@ public:
 			return ID_EOS;
 		}
 		double normalizer = 1.0 / sum;
-		double bernoulli = Sampler::uniform(0, 1);
+		double bernoulli = sampler::uniform(0, 1);
 		double stack = 0;
 		int depth = probs.size();
 		for(int n = 0;n < probs.size();n++){
@@ -300,7 +299,7 @@ public:
 			return ID_EOS;
 		}
 		normalizer = 1.0 / sum;
-		bernoulli = Sampler::uniform(0, 1);
+		bernoulli = sampler::uniform(0, 1);
 		stack = 0;
 		for(int i = 0;i < word_ids.size();i++){
 			stack += probs[i] * normalizer;
@@ -437,8 +436,8 @@ public:
 		init_hyperparameters_at_depth_if_needed(_depth);
 
 		for(int u = 0;u <= _depth;u++){
-			_d_m[u] = Sampler::beta(_a_m[u] + sum_1_y_ui_m[u], _b_m[u] + sum_1_z_uwkj_m[u]);
-			_theta_m[u] = Sampler::gamma(_alpha_m[u] + sum_y_ui_m[u], _beta_m[u] - sum_log_x_u_m[u]);
+			_d_m[u] = sampler::beta(_a_m[u] + sum_1_y_ui_m[u], _b_m[u] + sum_1_z_uwkj_m[u]);
+			_theta_m[u] = sampler::gamma(_alpha_m[u] + sum_y_ui_m[u], _beta_m[u] - sum_log_x_u_m[u]);
 		}
 		// 不要な深さのハイパーパラメータを削除
 		int num_remove = _d_m.size() - _depth - 1;

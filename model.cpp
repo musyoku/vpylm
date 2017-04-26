@@ -3,9 +3,9 @@
 #include <iostream>
 #include <string>
 #include <unordered_map> 
-#include "core/node.h"
-#include "core/vpylm.h"
-#include "core/vocab.h"
+#include "src/node.h"
+#include "src/vpylm.h"
+#include "src/vocab.h"
 using namespace boost;
 
 void split_word_by(const wstring &str, wchar_t delim, vector<wstring> &elems){
@@ -90,7 +90,7 @@ public:
 			rand_indices.push_back(i);
 		}
 		int train_split = lines.size() * train_split_ratio;
-		shuffle(rand_indices.begin(), rand_indices.end(), Sampler::mt);	// データをシャッフル
+		shuffle(rand_indices.begin(), rand_indices.end(), sampler::mt);	// データをシャッフル
 		for(int i = 0;i < rand_indices.size();i++){
 			wstring &sentence = lines[rand_indices[i]];
 			if(i < train_split){
@@ -157,7 +157,7 @@ public:
 				_rand_indices.push_back(data_index);
 			}
 		}
-		shuffle(_rand_indices.begin(), _rand_indices.end(), Sampler::mt);	// データをシャッフル
+		shuffle(_rand_indices.begin(), _rand_indices.end(), sampler::mt);	// データをシャッフル
 		for(int n = 0;n < _dataset_train.size();n++){
 			if (PyErr_CheckSignals() != 0) {		// ctrl+cが押されたかチェック
 				return;
