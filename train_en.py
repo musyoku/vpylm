@@ -63,5 +63,5 @@ if __name__ == "__main__":
 	parser.add_argument("-f", "--filename", type=str, default=None, help="訓練用のテキストファイルのパス.")
 	parser.add_argument("-e", "--epoch", type=int, default=1000, help="総epoch.")
 	parser.add_argument("-m", "--model", type=str, default="out", help="保存フォルダ名.")
-	parser.add_argument("-l", "--train-split", type=int, default=None, help="テキストデータの最初の何行を訓練データにするか.")
+	parser.add_argument("-l", "--train-split", type=float, default=0.8, help="テキストデータうち何割を訓練データにするか.")
 	main(parser.parse_args())

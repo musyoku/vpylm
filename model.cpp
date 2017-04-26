@@ -72,7 +72,7 @@ public:
 		delete  _vpylm;
 		delete  _vocab;
 	}
-	bool load_textfile(string filename, int train_split){
+	bool load_textfile(string filename, double train_split_ratio){
 		wifstream ifs(filename.c_str());
 		wstring sentence;
 		if (ifs.fail()){
@@ -85,11 +85,11 @@ public:
 			}
 			lines.push_back(sentence);
 		}
-		assert(lines.size() > train_split);
 		vector<int> rand_indices;
 		for(int i = 0;i < lines.size();i++){
 			rand_indices.push_back(i);
 		}
+		int train_split = lines.size() * train_split_ratio;
 		shuffle(rand_indices.begin(), rand_indices.end(), Sampler::mt);	// データをシャッフル
 		for(int i = 0;i < rand_indices.size();i++){
 			wstring &sentence = lines[rand_indices[i]];
@@ -272,9 +272,9 @@ public:
 				return 0;
 			}
 			vector<id> &token_ids = dataset[data_index];
-			log_Pdataset += _vpylm->compute_log_Pw(token_ids) / token_ids.size();
+			log_Pdataset += _vpylm->compute_log2_Pw(token_ids) / token_ids.size();
 		}
-		return exp(-log_Pdataset / (double)dataset.size());
+		return pow(2.0, -log_Pdataset / (double)dataset.size());
 	}
 	wstring generate_sentence(){
 		std::vector<id> context_token_ids;
