@@ -165,7 +165,7 @@ public:
 			int data_index = _rand_indices[n];
 			vector<id> &token_ids = _dataset_train[data_index];
 			vector<int> &prev_depths = _prev_depths_for_data[data_index];
-			for(int token_t_index = 0;token_t_index < token_ids.size();token_t_index++){
+			for(int token_t_index = 1;token_t_index < token_ids.size();token_t_index++){
 				if(_gibbs_first_addition == false){
 					int prev_depth = prev_depths[token_t_index];
 					assert(prev_depth >= 0);
@@ -185,7 +185,7 @@ public:
 			}
 			vector<id> &token_ids = _dataset_train[data_index];
 			vector<int> &prev_depths = _prev_depths_for_data[data_index];
-			for(int token_t_index = 0;token_t_index < token_ids.size();token_t_index++){
+			for(int token_t_index = 1;token_t_index < token_ids.size();token_t_index++){
 				int prev_depth = prev_depths[token_t_index];
 				assert(prev_depth >= 0);
 				_vpylm->remove_customer_at_timestep(token_ids, token_t_index, prev_depth);
@@ -272,7 +272,7 @@ public:
 				return 0;
 			}
 			vector<id> &token_ids = dataset[data_index];
-			log_Pdataset += _vpylm->compute_log2_Pw(token_ids) / token_ids.size();
+			log_Pdataset += _vpylm->compute_log2_Pw(token_ids) / (token_ids.size() - 1);
 		}
 		return pow(2.0, -log_Pdataset / (double)dataset.size());
 	}
@@ -282,7 +282,7 @@ public:
 		for(int n = 0;n < 1000;n++){
 			id next_id = _vpylm->sample_next_token(context_token_ids);
 			if(next_id == ID_EOS){
-				vector<id> token_ids(context_token_ids.begin() + _vpylm->_depth + 1, context_token_ids.end());
+				vector<id> token_ids(context_token_ids.begin() + 1, context_token_ids.end());
 				return _vocab->token_ids_to_sentence(token_ids);
 			}
 			context_token_ids.push_back(next_id);

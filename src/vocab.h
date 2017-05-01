@@ -26,6 +26,8 @@ public:
 	}
 	id add_string(wstring &str){
 		id token_id = string_to_token_id(str);
+		assert(token_id != ID_BOS);
+		assert(token_id != ID_EOS);
 		_string_by_token_id[token_id] = str;
 		return token_id;
 	}

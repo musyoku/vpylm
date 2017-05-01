@@ -59,6 +59,7 @@ public:
 		assert(0 <= depth_t && depth_t <= token_t_index);
 		Node* node = find_node_by_tracing_back_context(token_ids, token_t_index, depth_t, true);
 		assert(node != NULL);
+		assert(node->_depth == depth_t);
 		if(depth_t > 0){
 			assert(node->_token_id == token_ids[token_t_index - depth_t]);
 		}
@@ -69,6 +70,7 @@ public:
 		assert(0 <= depth_t && depth_t <= token_t_index);
 		Node* node = find_node_by_tracing_back_context(token_ids, token_t_index, depth_t, true);
 		assert(node != NULL);
+		assert(node->_depth == depth_t);
 		if(depth_t > 0){
 			assert(node->_token_id == token_ids[token_t_index - depth_t]);
 		}
@@ -86,8 +88,8 @@ public:
 		}
 		id token_t = context_token_ids[token_t_index];
 
-		// この値を下回れば打ち切り
-		double eps = 1e-6;
+		// 停止確率がこの値を下回れば打ち切り
+		double eps = 1e-24;
 		
 		double sum = 0;
 		double p_pass = 0;
@@ -104,7 +106,7 @@ public:
 				_sampling_table[n] = p;
 				sampling_table_size += 1;
 				sum += p;
-				if(p < eps){
+				if(p_stop < eps){
 					break;
 				}
 				if(n < token_t_index){
@@ -119,7 +121,7 @@ public:
 				sampling_table_size += 1;
 				sum += p;
 				p_pass *= _beta_pass / (_beta_stop + _beta_pass);
-				if(p < eps){
+				if(p_stop < eps){
 					break;
 				}
 			}
@@ -335,9 +337,9 @@ public:
 	double compute_log_Pw(vector<id> &token_ids){
 		assert(token_ids.size() > 0);
 		double sum_pw_h = 0;
-		vector<id> context_token_ids;
-		for(int depth = 0;depth < token_ids.size();depth++){
-			id token_id = token_ids[depth];
+		vector<id> context_token_ids(token_ids.begin(), token_ids.begin() + 1);
+		for(int t = 1;t < token_ids.size();t++){
+			id token_id = token_ids[t];
 			double pw_h = compute_Pw_given_h(token_id, context_token_ids);
 			assert(pw_h > 0);
 			sum_pw_h += log(pw_h);
@@ -348,9 +350,9 @@ public:
 	double compute_log2_Pw(vector<id> &token_ids){
 		assert(token_ids.size() > 0);
 		double sum_pw_h = 0;
-		vector<id> context_token_ids;
-		for(int depth = 0;depth < token_ids.size();depth++){
-			id token_id = token_ids[depth];
+		vector<id> context_token_ids(token_ids.begin(), token_ids.begin() + 1);
+		for(int t = 1;t < token_ids.size();t++){
+			id token_id = token_ids[t];
 			double pw_h = compute_Pw_given_h(token_id, context_token_ids);
 			assert(pw_h > 0);
 			sum_pw_h += log2(pw_h);
