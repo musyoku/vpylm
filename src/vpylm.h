@@ -4,9 +4,10 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
+#include <unordered_map> 
+#include <unordered_set>
 #include <vector>
 #include <cassert>
-#include <unordered_map> 
 #include <fstream>
 #include "sampler.h"
 #include "common.h"
@@ -244,7 +245,7 @@ public:
 		}
 		return mult_pw;
 	}
-	id sample_next_token(vector<id> &context_token_ids){
+	id sample_next_token(vector<id> &context_token_ids, unordered_set<id> &all_token_ids){
 		int token_t_index = context_token_ids.size() - 1;
 		Node* node = _root;
 		vector<double> probs;
@@ -285,8 +286,10 @@ public:
 		vector<id> word_ids;
 		probs.clear();
 		sum = 0;
-		for(auto elem: node->_arrangement){
-			id token_id = elem.first;
+		for(id token_id: all_token_ids){
+			if(token_id == ID_BOS){
+				continue;
+			}
 			double pw_h = compute_Pw_given_h(token_id, context_token_ids);
 			if(pw_h > 0){
 				word_ids.push_back(token_id);
@@ -394,15 +397,15 @@ public:
 	}
 	// "A Bayesian Interpretation of Interpolated Kneser-Ney" Appendix C参照
 	// http://www.gatsby.ucl.ac.uk/~ywteh/research/compling/hpylm.pdf
-	void sum_auxiliary_variables_recursively(Node* node, vector<double> &sum_log_x_u_m, vector<double> &sum_y_ui_m, vector<double> &sum_1_y_ui_m, vector<double> &sum_1_z_uwkj_m, int &bottom){
+	void sum_auxiliary_variables_recursively(Node* node, vector<double> &sum_log_x_u_m, vector<double> &sum_y_ui_m, vector<double> &sum_1_y_ui_m, vector<double> &sum_1_z_uwkj_m){
 		for(auto elem: node->_children){
 			Node* child = elem.second;
 			int depth = child->_depth;
 
-			if(depth > bottom){
-				bottom = depth;
-			}
-			init_hyperparameters_at_depth_if_needed(depth);
+			// if(depth > bottom){
+			// 	bottom = depth;
+			// }
+			// init_hyperparameters_at_depth_if_needed(depth);
 
 			double d = _d_m[depth];
 			double theta = _theta_m[depth];
@@ -411,7 +414,7 @@ public:
 			sum_1_y_ui_m[depth] += child->auxiliary_1_y_ui(d, theta);	// 1 - y_ui
 			sum_1_z_uwkj_m[depth] += child->auxiliary_1_z_uwkj(d);		// 1 - z_uwkj
 
-			sum_auxiliary_variables_recursively(child, sum_log_x_u_m, sum_y_ui_m, sum_1_y_ui_m, sum_1_z_uwkj_m, bottom);
+			sum_auxiliary_variables_recursively(child, sum_log_x_u_m, sum_y_ui_m, sum_1_y_ui_m, sum_1_z_uwkj_m);
 		}
 	}
 	// dとθの推定
@@ -431,18 +434,20 @@ public:
 		sum_1_z_uwkj_m[0] = _root->auxiliary_1_z_uwkj(_d_m[0]);				// 1 - z_uwkj
 
 		// それ以外
-		_depth = 0;
-		// _max_depthは以下を実行すると更新される
+		// max_depth = 0;
+		init_hyperparameters_at_depth_if_needed(max_depth);
+		// _depthは以下を実行すると更新される
 		// HPYLMでは無意味だがVPYLMで最大深さを求める時に使う
-		sum_auxiliary_variables_recursively(_root, sum_log_x_u_m, sum_y_ui_m, sum_1_y_ui_m, sum_1_z_uwkj_m, _depth);
-		init_hyperparameters_at_depth_if_needed(_depth);
+		sum_auxiliary_variables_recursively(_root, sum_log_x_u_m, sum_y_ui_m, sum_1_y_ui_m, sum_1_z_uwkj_m);
 
-		for(int u = 0;u <= _depth;u++){
+		for(int u = 0;u <= max_depth;u++){
 			_d_m[u] = sampler::beta(_a_m[u] + sum_1_y_ui_m[u], _b_m[u] + sum_1_z_uwkj_m[u]);
 			_theta_m[u] = sampler::gamma(_alpha_m[u] + sum_y_ui_m[u], _beta_m[u] - sum_log_x_u_m[u]);
+			// cout << "_d_m[" << u << "] <- " << _d_m[u] << endl;
+			// cout << "_theta_m[" << u << "] <- " << _theta_m[u] << endl;
 		}
 		// 不要な深さのハイパーパラメータを削除
-		int num_remove = _d_m.size() - _depth - 1;
+		int num_remove = _d_m.size() - max_depth - 1;
 		for(int n = 0;n < num_remove;n++){
 			_d_m.pop_back();
 			_theta_m.pop_back();

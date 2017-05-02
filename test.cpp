@@ -4,15 +4,16 @@ using namespace std;
 void test_train(){
     string dirname = "out";
 	PyVPYLM* model = new PyVPYLM();
-	model->load_textfile("dataset/wiki.txt", 45000);
+	model->load_textfile("dataset/test.txt", 0.9);
 	model->set_g0(1.0 / model->get_num_types_of_words());
 	model->compile();
 
-	for(int epoch = 1;epoch < 10;epoch++){
+	for(int epoch = 1;epoch < 1000;epoch++){
 		model->perform_gibbs_sampling();
+		model->sample_hyperparameters();
 		double ppl = model->compute_perplexity_test();
 		double log_likelihood = model->compute_log_Pdataset_test();
-		cout << ppl << ", " << log_likelihood << endl;
+		cout << ppl << ", " << model->compute_perplexity_train() << endl;
 	}
 	printf("# of nodes: %d\n", model->_vpylm->get_num_nodes());
 	printf("# of customers: %d\n", model->_vpylm->get_num_customers());

@@ -280,7 +280,7 @@ public:
 		std::vector<id> context_token_ids;
 		context_token_ids.push_back(ID_BOS);
 		for(int n = 0;n < 1000;n++){
-			id next_id = _vpylm->sample_next_token(context_token_ids);
+			id next_id = _vpylm->sample_next_token(context_token_ids, _vocab->get_all_token_ids());
 			if(next_id == ID_EOS){
 				vector<id> token_ids(context_token_ids.begin() + 1, context_token_ids.end());
 				return _vocab->token_ids_to_sentence(token_ids);
