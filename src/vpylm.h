@@ -116,7 +116,6 @@ public:
 			}else{
 				double p_stop = p_pass * _beta_stop / (_beta_stop + _beta_pass);
 				double p = pw * p_stop;
-				// probs.push_back(p);
 				_sampling_table[n] = p;
 				sampling_table_size += 1;
 				sum += p;
@@ -137,106 +136,98 @@ public:
 		}
 		return _sampling_table[sampling_table_size - 1];
 	}
-	double compute_Pw_given_h(vector<id> &word_ids, vector<id> context_token_ids){
-		double p = 1;
-		for(int n = 0;n < word_ids.size();n++){
-			p *= compute_Pw_given_h(word_ids[n], context_token_ids);
-			context_token_ids.push_back(word_ids[n]);
-		}
-		return p;
-	}
 	double compute_Pw_given_h(id token_id, vector<id> &context_token_ids){
+		assert(context_token_ids.size() > 0);
 		Node* node = _root;
+
 		// 停止確率がこの値を下回れば打ち切り
 		double eps = 1e-24;
+
 		double parent_pw = _g0;
 		double p_pass = 1;
+		double p_stop = 1;	// eps以上なら何でもいい
 		double pw_h = 0;
-		
-		for(int depth = 0;depth < context_token_ids.size();depth++){
-			id context_token_id = context_token_ids[context_token_ids.size() - depth - 1];
-			if(node == NULL){
-				double p_stop = p_pass * _beta_stop / (_beta_stop + _beta_pass);
+
+		// 文脈の一時刻先を深さ0と考える
+		// （token_idの位置が深さ0と考える）
+		// 例）
+		// context_token_ids: [1, 2, 3]
+		// depth:              3  2  1  0
+		int depth = 0;
+
+		// 無限の深さまで考える
+		// 実際のコンテキスト長を超えて確率を計算することもある
+		while(p_stop > eps){
+			if(node == NULL){	// 文脈ノードがない場合
+				p_stop = p_pass * _beta_stop / (_beta_stop + _beta_pass);
 				pw_h += parent_pw * p_stop;
 				p_pass *= _beta_pass / (_beta_stop + _beta_pass);
-				if(p_stop < eps){
-					break;
-				}
 			}else{
+				assert(node->_depth == depth);
 				double pw = node->compute_Pw_with_parent_Pw(token_id, parent_pw, _d_m, _theta_m);
-				double p_stop = node->stop_probability(_beta_stop, _beta_pass, false) * p_pass;
+				p_stop = node->stop_probability(_beta_stop, _beta_pass, false) * p_pass;
 				p_pass *= node->pass_probability(_beta_stop, _beta_pass, false);
 				pw_h += pw * p_stop;
 				parent_pw = pw;
-				Node* child = node->find_child_node(context_token_id);
-				node = child;
-				if(p_stop < eps){
-					break;
+				if(depth < context_token_ids.size()){
+					id context_token_id = context_token_ids[context_token_ids.size() - depth - 1];
+					node = node->find_child_node(context_token_id);
+				}else{
+					node = NULL;	// 文脈を超えても計算する
 				}
 			}
+			depth++;
 		}
 		assert(pw_h <= 1);
 		return pw_h;
 	}
 	// old version
 	double _compute_Pw_given_h(id token_id, vector<id> &context_token_ids){
-		Node* node = _root;
-		int depth = 0;
-		for(;depth < context_token_ids.size();depth++){
-			id context_token_id = context_token_ids[context_token_ids.size() - depth - 1];
-			if(node == NULL){
-				break;
-			}
-			Node* child = node->find_child_node(context_token_id);
-			if(child == NULL){
-				break;
-			}
-			node = child;
-		}
-		double p = 0;
-		for(int n = 0;n <= depth;n++){
-			double a = compute_Pw_given_hn(token_id, context_token_ids, n);
-			double b = compute_Pn_given_h(n, context_token_ids);
-			p += a * b;
+		double eps = 1e-24;	// 停止確率がこの値を下回れば打ち切り
+		double p = 0;		// 総和
+		double p_stop = 1;	// eps以上なら何でもいい
+		int n = 0;
+		while(p_stop > eps){
+			double pw = compute_Pw_given_hn(token_id, context_token_ids, n);
+			p_stop = compute_Pn_given_h(n, context_token_ids);
+			p += pw * p_stop;	// 深さで混合する
+			n++;
 		}
 		return p;
 	}
 	double compute_Pw_given_hn(id token_id, vector<id> &context_token_ids, int n){
-		assert(n <= context_token_ids.size());
 		Node* node = _root;
-		int depth = 0;
-		for(;depth < n;depth++){
-			id context_token_id = context_token_ids[context_token_ids.size() - depth - 1];
-			if(node == NULL){
-				break;
-			}
+		for(int depth = 1;depth <= n;depth++){
+			id context_token_id = context_token_ids[context_token_ids.size() - depth];
 			Node* child = node->find_child_node(context_token_id);
 			if(child == NULL){
 				break;
 			}
 			node = child;
 		}
-		assert(depth == n);
+		assert(node->_depth <= n);
 		double p = node->compute_Pw(token_id, _g0, _d_m, _theta_m);
 		return p;
 	}
 	double compute_Pn_given_h(int n, vector<id> &context_token_ids){
-		assert(n <= context_token_ids.size());
 		Node* node = _root;
-		int depth = 0;
-		for(;depth < n;depth++){
-			id context_token_id = context_token_ids[context_token_ids.size() - depth - 1];
+		double p_stop, p_pass;
+		for(int depth = 0;depth <= n;depth++){
 			if(node == NULL){
-				break;
+				p_stop = p_pass * _beta_stop / (_beta_stop + _beta_pass);
+				p_pass *= _beta_pass / (_beta_stop + _beta_pass);
+			}else{
+				p_stop = node->stop_probability(_beta_stop, _beta_pass);
+				p_pass = node->pass_probability(_beta_stop, _beta_pass);
+				if(depth < context_token_ids.size()){
+					id context_token_id = context_token_ids[context_token_ids.size() - depth - 1];
+					node = node->find_child_node(context_token_id);
+				}else{
+					node = NULL;
+				}
 			}
-			Node* child = node->find_child_node(context_token_id);
-			if(child == NULL){
-				break;
-			}
-			node = child;
 		}
-		assert(depth == n);
-		return node->stop_probability(_beta_stop, _beta_pass);
+		return p_stop;
 	}
 	double compute_Pw(vector<id> &token_ids){
 		if(token_ids.size() == 0){
@@ -390,7 +381,7 @@ public:
 	}
 	// dとθの推定
 	void sample_hyperparams(){
-		int max_depth = _d_m.size() - 1;
+		int max_depth = get_depth();
 
 		// 親ノードの深さが0であることに注意
 		vector<double> sum_log_x_u_m(max_depth + 1, 0.0);
@@ -405,27 +396,12 @@ public:
 		sum_1_z_uwkj_m[0] = _root->auxiliary_1_z_uwkj(_d_m[0]);				// 1 - z_uwkj
 
 		// それ以外
-		// max_depth = 0;
 		init_hyperparameters_at_depth_if_needed(max_depth);
-		// _depthは以下を実行すると更新される
-		// HPYLMでは無意味だがVPYLMで最大深さを求める時に使う
 		sum_auxiliary_variables_recursively(_root, sum_log_x_u_m, sum_y_ui_m, sum_1_y_ui_m, sum_1_z_uwkj_m);
 
 		for(int u = 0;u <= max_depth;u++){
 			_d_m[u] = sampler::beta(_a_m[u] + sum_1_y_ui_m[u], _b_m[u] + sum_1_z_uwkj_m[u]);
 			_theta_m[u] = sampler::gamma(_alpha_m[u] + sum_y_ui_m[u], _beta_m[u] - sum_log_x_u_m[u]);
-			// cout << "_d_m[" << u << "] <- " << _d_m[u] << endl;
-			// cout << "_theta_m[" << u << "] <- " << _theta_m[u] << endl;
-		}
-		// 不要な深さのハイパーパラメータを削除
-		int num_remove = _d_m.size() - max_depth - 1;
-		for(int n = 0;n < num_remove;n++){
-			_d_m.pop_back();
-			_theta_m.pop_back();
-			_a_m.pop_back();
-			_b_m.pop_back();
-			_alpha_m.pop_back();
-			_beta_m.pop_back();
 		}
 	}
 	int get_num_nodes(){
@@ -442,6 +418,20 @@ public:
 	}
 	int get_sum_pass_counts(){
 		return _root->sum_pass_counts();
+	}
+	void update_max_depth(Node* node, int &max_depth){
+		if(node->_depth > max_depth){
+			max_depth = node->_depth;
+		}
+		for(const auto &elem: node->_children){
+			Node* child = elem.second;
+			update_max_depth(child, max_depth);
+		}
+	}
+	int get_depth(){
+		int max_depth = 0;
+		update_max_depth(_root, max_depth);
+		return max_depth;
 	}
 	void count_tokens_of_each_depth(unordered_map<int, int> &map){
 		_root->count_tokens_of_each_depth(map);

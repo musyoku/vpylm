@@ -165,25 +165,13 @@ public:
 			int data_index = _rand_indices[n];
 			vector<id> &token_ids = _dataset_train[data_index];
 			vector<int> &prev_depths = _prev_depths_for_data[data_index];
-			for(int token_t_index = 1;token_t_index < token_ids.size();token_t_index++){
+			for(int token_t_index = 2;token_t_index < token_ids.size();token_t_index++){
 				if(_gibbs_first_addition == false){
 					int prev_depth = prev_depths[token_t_index];
 					assert(prev_depth >= 0);
 					_vpylm->remove_customer_at_timestep(token_ids, token_t_index, prev_depth);
 				}
 				int new_depth = _vpylm->sample_depth_at_timestep(token_ids, token_t_index);
-
-
-
-
-
-				new_depth = 1;
-
-
-
-
-
-
 				_vpylm->add_customer_at_timestep(token_ids, token_t_index, new_depth);
 				prev_depths[token_t_index] = new_depth;
 			}
@@ -223,7 +211,7 @@ public:
 		return _sum_word_count;
 	}
 	int get_vpylm_depth(){
-		return _vpylm->_depth;
+		return _vpylm->get_depth();
 	}
 	id get_bos_id(){
 		return ID_BOS;
