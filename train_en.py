@@ -48,6 +48,8 @@ def main(args):
 			print "\nlog_likelihood:", int(log_likelihood), int(vpylm.compute_log_Pdataset_train())
 			print "perplexity:", int(perplexity), int(vpylm.compute_perplexity_train())
 			vpylm.save(args.model);
+			counts = vpylm.count_tokens_of_each_depth()
+			print counts
 			# CSV出力
 			csv_likelihood.append([epoch, log_likelihood])
 			data = pd.DataFrame(csv_likelihood)

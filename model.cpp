@@ -111,19 +111,19 @@ public:
 		vector<wstring> words;
 		split_word_by(sentence, L' ', words);	// スペースで分割
 		if(words.size() > 0){
-			vector<id> tokens;
-			tokens.push_back(ID_BOS);
+			vector<id> token_ids;
+			token_ids.push_back(ID_BOS);
 			for(auto word: words){
 				if(word.size() == 0){
 					continue;
 				}
 				id token_id = _vocab->add_string(word);
-				tokens.push_back(token_id);
+				token_ids.push_back(token_id);
 				_word_count[token_id] += 1;
 				_sum_word_count += 1;
 			}
-			tokens.push_back(ID_EOS);
-			dataset.push_back(tokens);
+			token_ids.push_back(ID_EOS);
+			dataset.push_back(token_ids);
 		}
 	}
 	void compile(){
@@ -172,6 +172,18 @@ public:
 					_vpylm->remove_customer_at_timestep(token_ids, token_t_index, prev_depth);
 				}
 				int new_depth = _vpylm->sample_depth_at_timestep(token_ids, token_t_index);
+
+
+
+
+
+				new_depth = 1;
+
+
+
+
+
+
 				_vpylm->add_customer_at_timestep(token_ids, token_t_index, new_depth);
 				prev_depths[token_t_index] = new_depth;
 			}

@@ -94,16 +94,15 @@ public:
 		
 		double sum = 0;
 		double p_pass = 1;
-		double Pw = 0;
+		double pw = 0;
 		int sampling_table_size = 0;
 		Node* node = _root;
 		for(int n = 0;n <= token_t_index;n++){
 			if(node){
-				Pw = node->compute_Pw(token_t, _g0, _d_m, _theta_m);
+				pw = node->compute_Pw(token_t, _g0, _d_m, _theta_m);
 				double p_stop = node->stop_probability(_beta_stop, _beta_pass, false) * p_pass;
+				double p = pw * p_stop;
 				p_pass *= node->pass_probability(_beta_stop, _beta_pass, false);
-				double p = Pw * p_stop;
-				// probs.push_back(p);
 				_sampling_table[n] = p;
 				sampling_table_size += 1;
 				sum += p;
@@ -116,7 +115,7 @@ public:
 				}
 			}else{
 				double p_stop = p_pass * _beta_stop / (_beta_stop + _beta_pass);
-				double p = Pw * p_stop;
+				double p = pw * p_stop;
 				// probs.push_back(p);
 				_sampling_table[n] = p;
 				sampling_table_size += 1;
@@ -148,31 +147,36 @@ public:
 	}
 	double compute_Pw_given_h(id token_id, vector<id> &context_token_ids){
 		Node* node = _root;
-		int depth = 0;
-		double pw = node->compute_Pw(token_id, _g0, _d_m, _theta_m);
-		double parent_pw = pw;
-		double p_stop = node->stop_probability(_beta_stop, _beta_pass);
-		double p_pass = node->pass_probability(_beta_stop, _beta_pass);
-		double p = pw * p_stop;
-		for(;depth < context_token_ids.size();depth++){
+		// 停止確率がこの値を下回れば打ち切り
+		double eps = 1e-24;
+		double parent_pw = _g0;
+		double p_pass = 1;
+		double pw_h = 0;
+		
+		for(int depth = 0;depth < context_token_ids.size();depth++){
 			id context_token_id = context_token_ids[context_token_ids.size() - depth - 1];
 			if(node == NULL){
-				break;
+				double p_stop = p_pass * _beta_stop / (_beta_stop + _beta_pass);
+				pw_h += parent_pw * p_stop;
+				p_pass *= _beta_pass / (_beta_stop + _beta_pass);
+				if(p_stop < eps){
+					break;
+				}
+			}else{
+				double pw = node->compute_Pw_with_parent_Pw(token_id, parent_pw, _d_m, _theta_m);
+				double p_stop = node->stop_probability(_beta_stop, _beta_pass, false) * p_pass;
+				p_pass *= node->pass_probability(_beta_stop, _beta_pass, false);
+				pw_h += pw * p_stop;
+				parent_pw = pw;
+				Node* child = node->find_child_node(context_token_id);
+				node = child;
+				if(p_stop < eps){
+					break;
+				}
 			}
-			Node* child = node->find_child_node(context_token_id);
-			if(child == NULL){
-				break;
-			}
-			node = child;
-			assert(node->_depth == depth + 1);
-			double pw = node->compute_Pw_with_parent_Pw(token_id, parent_pw, _d_m, _theta_m);
-			double p_stop = node->stop_probability(_beta_stop, _beta_pass, false) * p_pass;
-			p_pass *= node->pass_probability(_beta_stop, _beta_pass, false);
-			p += pw * p_stop;
-			parent_pw = pw;
 		}
-		assert(p <= 1);
-		return p;
+		assert(pw_h <= 1);
+		return pw_h;
 	}
 	// old version
 	double _compute_Pw_given_h(id token_id, vector<id> &context_token_ids){
@@ -234,19 +238,18 @@ public:
 		assert(depth == n);
 		return node->stop_probability(_beta_stop, _beta_pass);
 	}
-	double compute_Pw(vector<id> &word_ids){
-		if(word_ids.size() == 0){
+	double compute_Pw(vector<id> &token_ids){
+		if(token_ids.size() == 0){
 			return 0;
 		}
-		id word = word_ids[0];
-		double mult_pw = _root->compute_Pw(word, _g0, _d_m, _theta_m) * _root->stop_probability(_beta_stop, _beta_pass);
-		vector<id> context_token_ids(word_ids.begin(), word_ids.begin() + 1);
-		for(int depth = 1;depth < word_ids.size();depth++){
-			id word = word_ids[depth];
-			double pw_h = compute_Pw_given_h(word, context_token_ids);
+		double mult_pw = 1;
+		vector<id> context_token_ids(token_ids.begin(), token_ids.begin() + 1);
+		for(int t = 1;t < token_ids.size();t++){
+			id token_id = token_ids[t];
+			double pw_h = compute_Pw_given_h(token_id, context_token_ids);
 			assert(pw_h > 0);
 			mult_pw *= pw_h;
-			context_token_ids.push_back(word_ids[depth]);
+			context_token_ids.push_back(token_ids[t]);
 		}
 		return mult_pw;
 	}
