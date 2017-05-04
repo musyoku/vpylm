@@ -172,10 +172,6 @@ public:
 					_vpylm->remove_customer_at_timestep(token_ids, token_t_index, prev_depth);
 				}
 				int new_depth = _vpylm->sample_depth_at_timestep(token_ids, token_t_index);
-				// 性能を向上させるならコメントを外す
-				// if(token_t_index == 1){
-				// 	new_depth = 1;
-				// }
 				_vpylm->add_customer_at_timestep(token_ids, token_t_index, new_depth);
 				prev_depths[token_t_index] = new_depth;
 			}
