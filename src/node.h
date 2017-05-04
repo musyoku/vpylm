@@ -225,17 +225,42 @@ public:
 		double second_coeff = (theta_u + d_u * t_u) / (theta_u + c_u);
 		return first_term + second_coeff * parent_Pw;
 	}
+	// 再帰計算を防ぐ
+	double compute_Pw_with_parent_Pw(id token_id, double parent_pw, vector<double> &d_m, vector<double> &theta_m){
+		init_hyperparameters_at_depth_if_needed(_depth, d_m, theta_m);
+		double d_u = d_m[_depth];
+		double theta_u = theta_m[_depth];
+		double t_u = _num_tables;
+		double c_u = _num_customers;
+		auto itr = _arrangement.find(token_id);
+		if(itr == _arrangement.end()){
+			double coeff = (theta_u + d_u * t_u) / (theta_u + c_u);
+			return parent_pw * coeff;
+		}
+		vector<int> &num_customers_at_table = itr->second;
+		double c_uw = std::accumulate(num_customers_at_table.begin(), num_customers_at_table.end(), 0);
+		double t_uw = num_customers_at_table.size();
+		double first_term = std::max(0.0, c_uw - d_u * t_uw) / (theta_u + c_u);
+		double second_coeff = (theta_u + d_u * t_u) / (theta_u + c_u);
+		return first_term + second_coeff * parent_pw;
+	}
 	// VPYLM
-	double stop_probability(double beta_stop, double beta_pass){
+	double stop_probability(double beta_stop, double beta_pass, bool recursive = true){
 		double p = (_stop_count + beta_stop) / (_stop_count + _pass_count + beta_stop + beta_pass);
+		if(recursive == false){
+			return p;
+		}
 		if(_parent != NULL){
 			p *= _parent->pass_probability(beta_stop, beta_pass);
 		}
 		return p;
 	}
 	// VPYLM
-	double pass_probability(double beta_stop, double beta_pass){
+	double pass_probability(double beta_stop, double beta_pass, bool recursive = true){
 		double p = (_pass_count + beta_pass) / (_stop_count + _pass_count + beta_stop + beta_pass);
+		if(recursive == false){
+			return p;
+		}
 		if(_parent != NULL){
 			p *= _parent->pass_probability(beta_stop, beta_pass);
 		}

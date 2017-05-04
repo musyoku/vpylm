@@ -93,15 +93,15 @@ public:
 		double eps = 1e-24;
 		
 		double sum = 0;
-		double p_pass = 0;
+		double p_pass = 1;
 		double Pw = 0;
 		int sampling_table_size = 0;
 		Node* node = _root;
 		for(int n = 0;n <= token_t_index;n++){
 			if(node){
 				Pw = node->compute_Pw(token_t, _g0, _d_m, _theta_m);
-				double p_stop = node->stop_probability(_beta_stop, _beta_pass);
-				p_pass = node->pass_probability(_beta_stop, _beta_pass);
+				double p_stop = node->stop_probability(_beta_stop, _beta_pass, false) * p_pass;
+				p_pass *= node->pass_probability(_beta_stop, _beta_pass, false);
 				double p = Pw * p_stop;
 				// probs.push_back(p);
 				_sampling_table[n] = p;
@@ -149,7 +149,11 @@ public:
 	double compute_Pw_given_h(id token_id, vector<id> &context_token_ids){
 		Node* node = _root;
 		int depth = 0;
-		double p = 0;
+		double pw = node->compute_Pw(token_id, _g0, _d_m, _theta_m);
+		double parent_pw = pw;
+		double p_stop = node->stop_probability(_beta_stop, _beta_pass);
+		double p_pass = node->pass_probability(_beta_stop, _beta_pass);
+		double p = pw * p_stop;
 		for(;depth < context_token_ids.size();depth++){
 			id context_token_id = context_token_ids[context_token_ids.size() - depth - 1];
 			if(node == NULL){
@@ -159,14 +163,15 @@ public:
 			if(child == NULL){
 				break;
 			}
-			double p_w = node->compute_Pw(token_id, _g0, _d_m, _theta_m);
-			double p_stop = node->stop_probability(_beta_stop, _beta_pass);
-			p += p_w * p_stop;
 			node = child;
+			assert(node->_depth == depth + 1);
+			double pw = node->compute_Pw_with_parent_Pw(token_id, parent_pw, _d_m, _theta_m);
+			double p_stop = node->stop_probability(_beta_stop, _beta_pass, false) * p_pass;
+			p_pass *= node->pass_probability(_beta_stop, _beta_pass, false);
+			p += pw * p_stop;
+			parent_pw = pw;
 		}
-		double p_w = node->compute_Pw(token_id, _g0, _d_m, _theta_m);
-		double p_stop = node->stop_probability(_beta_stop, _beta_pass);
-		p += p_w * p_stop;
+		assert(p <= 1);
 		return p;
 	}
 	// old version
@@ -246,46 +251,9 @@ public:
 		return mult_pw;
 	}
 	id sample_next_token(vector<id> &context_token_ids, unordered_set<id> &all_token_ids){
-		int token_t_index = context_token_ids.size() - 1;
-		Node* node = _root;
-		vector<double> probs;
-		vector<Node*> nodes;
-		double pstop = _root->stop_probability(_beta_stop, _beta_pass);
-		probs.push_back(pstop);
-		nodes.push_back(node);
-		double sum = 0;
-
-		for(int n = 0;n <= token_t_index;n++){
-			if(node){
-				id context_token_id = context_token_ids[token_t_index - n];
-				node = node->find_child_node(context_token_id);
-				if(node == NULL){
-					break;
-				}
-				double pstop = node->stop_probability(_beta_stop, _beta_pass);
-				probs.push_back(pstop);
-				nodes.push_back(node);
-				sum += pstop;
-			}
-		}
-		if(sum == 0){
-			return ID_EOS;
-		}
-		double normalizer = 1.0 / sum;
-		double bernoulli = sampler::uniform(0, 1);
-		double stack = 0;
-		int depth = probs.size();
-		for(int n = 0;n < probs.size();n++){
-			stack += probs[n] * normalizer;
-			if(stack >= bernoulli){
-				depth = n;
-			}
-		}
-		node = nodes[depth];
-
 		vector<id> word_ids;
-		probs.clear();
-		sum = 0;
+		vector<double> probs;
+		double sum = 0;
 		for(id token_id: all_token_ids){
 			if(token_id == ID_BOS){
 				continue;
@@ -303,9 +271,9 @@ public:
 		if(sum == 0){
 			return ID_EOS;
 		}
-		normalizer = 1.0 / sum;
-		bernoulli = sampler::uniform(0, 1);
-		stack = 0;
+		double normalizer = 1.0 / sum;
+		double bernoulli = sampler::uniform(0, 1);
+		double stack = 0;
 		for(int i = 0;i < word_ids.size();i++){
 			stack += probs[i] * normalizer;
 			if(stack >= bernoulli){
