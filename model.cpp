@@ -137,6 +137,9 @@ public:
 	void set_g0(double g0){
 		_vpylm->_g0 = g0;
 	}
+	void set_seed(int seed){
+		sampler::mt.seed(seed);
+	}
 	void load(string dirname){
 		_vocab->load(dirname + "/vpylm.vocab");
 		if(_vpylm->load(dirname + "/vpylm.model")){
@@ -272,7 +275,7 @@ public:
 				return 0;
 			}
 			vector<id> &token_ids = dataset[data_index];
-			log_Pdataset += _vpylm->compute_log2_Pw(token_ids) / (token_ids.size() - 1);
+			log_Pdataset += _vpylm->compute_log2_Pw(token_ids) / token_ids.size();
 		}
 		return pow(2.0, -log_Pdataset / (double)dataset.size());
 	}
@@ -294,6 +297,7 @@ public:
 BOOST_PYTHON_MODULE(model){
 	python::class_<PyVPYLM>("vpylm", python::init<>())
 	.def("set_g0", &PyVPYLM::set_g0)
+	.def("set_seed", &PyVPYLM::set_seed)
 	.def("load_textfile", &PyVPYLM::load_textfile)
 	.def("compile", &PyVPYLM::compile)
 	.def("perform_gibbs_sampling", &PyVPYLM::perform_gibbs_sampling)

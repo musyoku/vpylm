@@ -18,6 +18,7 @@ def main(args):
 	assert args.train_split is not None
 
 	vpylm = model.vpylm()
+	vpylm.set_seed(args.seed)
 	print stdout.BOLD + args.filename + "を読み込んでいます ..." + stdout.END
 	assert vpylm.load_textfile(args.filename, args.train_split) == True
 	print stdout.BOLD + args.filename + "を読み込みました." + stdout.END
@@ -63,5 +64,6 @@ if __name__ == "__main__":
 	parser.add_argument("-f", "--filename", type=str, default=None, help="訓練用のテキストファイルのパス.")
 	parser.add_argument("-e", "--epoch", type=int, default=1000, help="総epoch.")
 	parser.add_argument("-m", "--model", type=str, default="out", help="保存フォルダ名.")
+	parser.add_argument("--seed", type=int, default=0, help="シード.")
 	parser.add_argument("-split", "--train-split", type=float, default=0.8, help="テキストデータうち何割を訓練データにするか.")
 	main(parser.parse_args())
